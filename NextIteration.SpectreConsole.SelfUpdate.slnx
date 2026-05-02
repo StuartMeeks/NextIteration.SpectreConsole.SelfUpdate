@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/NextIteration.SpectreConsole.SelfUpdate/NextIteration.SpectreConsole.SelfUpdate.csproj" />
+  <Project Path="tests/NextIteration.SpectreConsole.SelfUpdate.Tests/NextIteration.SpectreConsole.SelfUpdate.Tests.csproj" />
+  <Project Path="demo/NextIteration.SpectreConsole.SelfUpdate.Demo/NextIteration.SpectreConsole.SelfUpdate.Demo.csproj" />
+</Solution>
