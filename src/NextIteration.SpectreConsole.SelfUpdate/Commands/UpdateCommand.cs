@@ -31,7 +31,20 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
             [CommandOption("--force")]
             [Description("Reinstall even if already on the latest version.")]
             public bool Force { get; init; }
+
+            /// <summary>
+            /// How to resolve conflicts where a new release ships an entry whose
+            /// path matches one of <c>SelfUpdaterOptions.PreservePaths</c>:
+            /// <c>ask</c> prompts per file, <c>keep</c> always keeps the user's,
+            /// <c>new</c> always uses the new release's. Default <c>ask</c> when
+            /// running interactively (no <c>--yes</c>), <c>keep</c> with <c>--yes</c>.
+            /// </summary>
+            [CommandOption("--strategy")]
+            [Description("Conflict strategy when a release ships a preserved path: ask | keep | new.")]
+            public string? Strategy { get; init; }
         }
+
+        private enum ConflictStrategy { Ask, Keep, New }
 
         private readonly ISelfUpdater _selfUpdater;
         private readonly IUpdateChecker _checker;
@@ -99,13 +112,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
                 return 2;
             }
 
+            var strategy = ResolveStrategy(settings);
+            var conflictResolver = BuildConflictResolver(strategy);
+
             try
             {
                 await _console.Status().StartAsync("Updating…", async statusContext =>
                 {
                     var progress = new Progress<UpdateProgressEvent>(evt =>
                         statusContext.Status(StageLabel(evt.Stage)));
-                    await _selfUpdater.InstallAsync(release, progress, cancellationToken).ConfigureAwait(false);
+                    await _selfUpdater.InstallAsync(release, progress, conflictResolver, cancellationToken).ConfigureAwait(false);
                 }).ConfigureAwait(false);
             }
             catch (UpdateException ex)
@@ -124,6 +140,47 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
             return _console.Confirm(
                 $"Install [bold]{tag}[/] over the current install in {Markup.Escape(_installer.InstallDirectory)}?",
                 defaultValue: true);
+        }
+
+        private static ConflictStrategy ResolveStrategy(Settings settings)
+        {
+            if (string.IsNullOrWhiteSpace(settings.Strategy))
+            {
+                // Non-interactive runs (--yes) default to keep so updates
+                // never block on a prompt. Interactive runs default to ask
+                // so the user gets a real chance to make a decision.
+                return settings.Yes ? ConflictStrategy.Keep : ConflictStrategy.Ask;
+            }
+            return settings.Strategy.ToLowerInvariant() switch
+            {
+                "ask" => ConflictStrategy.Ask,
+                "keep" => ConflictStrategy.Keep,
+                "new" => ConflictStrategy.New,
+                _ => throw new InvalidOperationException(
+                    $"Unknown --strategy value '{settings.Strategy}'. Expected one of: ask, keep, new."),
+            };
+        }
+
+        private Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>? BuildConflictResolver(ConflictStrategy strategy) =>
+            strategy switch
+            {
+                ConflictStrategy.Keep => null,   // null is the documented "KeepExisting" default
+                ConflictStrategy.New => (_, _) => Task.FromResult(UpdateConflictResolution.UseNew),
+                ConflictStrategy.Ask => PromptForConflictAsync,
+                _ => null,
+            };
+
+        private Task<UpdateConflictResolution> PromptForConflictAsync(UpdateConflict conflict, CancellationToken ct)
+        {
+            _console.MarkupLineInterpolated(CultureInfo.InvariantCulture,
+                $"[yellow]Preserved path conflict:[/] [bold]{Markup.Escape(conflict.RelativePath)}[/]");
+            if (conflict.ExistingSizeBytes is { } ex && conflict.NewSizeBytes is { } nu)
+            {
+                _console.MarkupLineInterpolated(CultureInfo.InvariantCulture,
+                    $"  yours: {ex} bytes  →  new: {nu} bytes");
+            }
+            var keep = _console.Confirm("Keep your existing file?", defaultValue: true);
+            return Task.FromResult(keep ? UpdateConflictResolution.KeepExisting : UpdateConflictResolution.UseNew);
         }
 
         private static bool IsUpdateAvailable(string current, string latestTag)

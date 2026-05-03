@@ -36,10 +36,14 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         public Task<RemoteRelease?> GetLatestReleaseAsync(CancellationToken ct = default) =>
             _source.GetLatestAsync(_options.Channel, ct);
 
-        public Task InstallAsync(RemoteRelease release, IProgress<UpdateProgressEvent>? progress = null, CancellationToken ct = default)
+        public Task InstallAsync(
+            RemoteRelease release,
+            IProgress<UpdateProgressEvent>? progress = null,
+            Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>? onConflict = null,
+            CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(release);
-            return _installer.InstallAsync(release, progress, ct);
+            return _installer.InstallAsync(release, progress, onConflict, ct);
         }
 
         public async Task InstallAsync(IProgress<UpdateProgressEvent>? progress = null, CancellationToken ct = default)
@@ -50,7 +54,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 throw new UpdateException(
                     "No release is available from the configured update source. The source either returned null or is currently unreachable.");
             }
-            await _installer.InstallAsync(release, progress, ct).ConfigureAwait(false);
+            await _installer.InstallAsync(release, progress, onConflict: null, ct).ConfigureAwait(false);
         }
     }
 }

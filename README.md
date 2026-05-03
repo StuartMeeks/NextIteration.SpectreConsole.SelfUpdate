@@ -199,6 +199,98 @@ This avoids the "EXE is locked while running" problem on Windows without a separ
 
 ---
 
+## Preserving user files across updates
+
+By default the installer treats every entry in the install directory as
+package-owned: anything that's not in the new release ends up in `.old/`
+and gets cleaned up on next startup. That's wrong for files the *user*
+placed there — `appsettings.Development.json`, a local SQLite database,
+a `data/` folder, scratch notes, plugins.
+
+`SelfUpdaterOptions.PreservePaths` is a list of glob patterns identifying
+top-level entries the installer should leave alone:
+
+```csharp
+services.AddSelfUpdater(opts =>
+{
+    opts.AppName = "myapp";
+    opts.UseGitHubReleases("acme/myapp");
+
+    opts.PreservePaths = new[]
+    {
+        "appsettings.Development.json",   // exact filename
+        "appsettings.*.json",             // glob over top-level files
+        "data/**",                        // whole top-level directory
+        "*.db",                           // sqlite or similar
+    };
+});
+```
+
+Patterns match the **top-level entry name** (the part before the first
+`/` in the pattern). `data/**` and `data/seed.json` both preserve the
+whole `data/` directory; nested-only preservation isn't supported in
+v0.1.x.
+
+### Letting end users extend the list via `appsettings.json`
+
+The `PreservePaths` property is a plain `IReadOnlyList<string>`, so
+consumers can populate it from `IConfiguration` and merge with their
+in-code defaults:
+
+```csharp
+var fromConfig = configuration
+    .GetSection("SelfUpdate:Preserve")
+    .Get<string[]>() ?? Array.Empty<string>();
+
+services.AddSelfUpdater(opts =>
+{
+    opts.AppName = "myapp";
+    opts.UseGitHubReleases("acme/myapp");
+    opts.PreservePaths = new[]
+    {
+        "appsettings.Development.json",
+        "data/**",
+    }.Concat(fromConfig).ToArray();
+});
+```
+
+End users can then drop their own paths into `appsettings.json` (or
+`appsettings.Development.json` next to the binary) without recompiling
+the CLI:
+
+```json
+{
+  "SelfUpdate": {
+    "Preserve": [ "my-custom-plugins/**", "notes.md" ]
+  }
+}
+```
+
+### Conflict resolution when a release ships a preserved path
+
+If a new release publishes an entry whose path matches one of the
+preserve patterns, the installer asks the resolver passed to
+`InstallAsync` what to do:
+
+```csharp
+await selfUpdater.InstallAsync(
+    release,
+    progress: null,
+    onConflict: (conflict, ct) =>
+    {
+        // conflict.RelativePath, conflict.ExistingSizeBytes, conflict.NewSizeBytes
+        return Task.FromResult(UpdateConflictResolution.KeepExisting);
+    });
+```
+
+Default (no resolver passed) is `KeepExisting` — the user's file wins.
+The drop-in `update` command exposes a `--strategy ask|keep|new` flag:
+with `--yes` it defaults to `keep` (so unattended runs never block on a
+prompt); without `--yes` it defaults to `ask` and prompts the user
+per file via Spectre's `Confirm`.
+
+---
+
 ## Configuration reference
 
 | Property | Default | Description |
@@ -214,6 +306,8 @@ This avoids the "EXE is locked while running" problem on Windows without a separ
 | `SkipVersionPredicate` | `v => v == "1.0.0"` | Returns true to suppress the check (for unstamped dev builds). |
 | `GitHubToken` | `null` (then `GITHUB_TOKEN`/`GH_TOKEN` env) | Optional bearer token for `HttpGitHubReleaseSource`. |
 | `UseDefaultSha256Verifier` | `true` | Whether to register the SHA-256 verifier automatically. |
+| `AllowInsecureManifestSource` | `false` | When true, `HttpManifestSource` accepts `http://` URLs. Tests / internal mirrors only — plain HTTP defeats SHA-256 verification. |
+| `PreservePaths` | `[]` | Glob patterns identifying top-level entries the installer must leave alone (`appsettings.Development.json`, `data/**`, `*.db`, …). See [Preserving user files](#preserving-user-files-across-updates). |
 
 ---
 

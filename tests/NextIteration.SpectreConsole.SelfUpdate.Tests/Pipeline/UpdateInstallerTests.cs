@@ -12,6 +12,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
     {
         private static readonly string[] TwoEntryNames = { "a.txt", "subdir" };
         private static readonly string[] OneEntryName = { "a.txt" };
+        private static readonly string[] PreserveAppsettingsDevelopment = { "appsettings.Development.json" };
+        private static readonly string[] PreserveAppsettingsJson = { "appsettings.json" };
+        private static readonly string[] PreserveDb = { "*.db" };
+        private static readonly string[] PreserveAppsettingsGlob = { "appsettings.*.json" };
 
         [Fact]
         public async Task InstallAsync_swaps_files_into_install_directory()
@@ -36,7 +40,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             };
 
             var installer = NewInstaller(installDir, source, "linux-x64");
-            await installer.InstallAsync(release, progress: null, CancellationToken.None);
+            await installer.InstallAsync(release, progress: null, onConflict: null, CancellationToken.None);
 
             // New files in place
             Assert.Equal("new binary", await File.ReadAllTextAsync(Path.Combine(installDir, "myapp.exe")));
@@ -70,7 +74,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-arm64");
 
             var ex = await Assert.ThrowsAsync<UpdateException>(() =>
-                installer.InstallAsync(release, progress: null, CancellationToken.None));
+                installer.InstallAsync(release, progress: null, onConflict: null, CancellationToken.None));
 
             Assert.Contains("No release asset matches RID 'linux-arm64'", ex.Message, StringComparison.Ordinal);
         }
@@ -91,7 +95,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             var stages = new List<UpdateStage>();
             var progress = new Progress<UpdateProgressEvent>(e => stages.Add(e.Stage));
             var installer = NewInstaller(installDir, source, "linux-x64");
-            await installer.InstallAsync(release, progress, CancellationToken.None);
+            await installer.InstallAsync(release, progress, onConflict: null, CancellationToken.None);
 
             // Allow Progress<T> to drain.
             await Task.Yield();
@@ -146,7 +150,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
 
             var installer = NewInstaller(installDir, source, "linux-x64");
             await Assert.ThrowsAsync<UpdateException>(() =>
-                installer.InstallAsync(release, progress: null, CancellationToken.None));
+                installer.InstallAsync(release, progress: null, onConflict: null, CancellationToken.None));
         }
 
         [Fact]
@@ -177,7 +181,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
 
             var installer = NewInstaller(installDir, source, "linux-x64");
             await Assert.ThrowsAsync<UpdateException>(() =>
-                installer.InstallAsync(release, progress: null, CancellationToken.None));
+                installer.InstallAsync(release, progress: null, onConflict: null, CancellationToken.None));
 
             Assert.True(File.Exists(sentinel),
                 "Lock acquisition must precede any staging mutation.");
@@ -215,7 +219,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 installDirResolver: () => installDir);
 
             var ex = await Assert.ThrowsAsync<UpdateException>(() =>
-                installer.InstallAsync(release, progress: null, CancellationToken.None));
+                installer.InstallAsync(release, progress: null, onConflict: null, CancellationToken.None));
 
             Assert.Contains("Refusing to install asset", ex.Message, StringComparison.Ordinal);
         }
@@ -332,6 +336,157 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
 
             // Anything Phase 2 managed to place before the failure is gone.
             Assert.False(File.Exists(Path.Combine(installDir, "newfile.txt")));
+        }
+
+        [Theory]
+        [InlineData("appsettings.Development.json", "appsettings.Development.json", true)]
+        [InlineData("appsettings.*.json", "appsettings.Development.json", true)]
+        [InlineData("appsettings.*.json", "appsettings.json", false)]
+        [InlineData("data/**", "data", true)]
+        [InlineData("data/**", "other", false)]
+        [InlineData("data/seed.json", "data", true)]   // top-level rule: pattern's first segment matches dir name
+        [InlineData("*.db", "myapp.db", true)]
+        [InlineData("*.db", "config.json", false)]
+        [InlineData("", "anything", false)]            // empty pattern is ignored
+        public void IsPreserved_matches_top_level_entry_against_pattern(string pattern, string name, bool expected)
+        {
+            var patterns = new[] { pattern };
+            Assert.Equal(expected, UpdateInstaller.IsPreserved(name, patterns));
+        }
+
+        [Fact]
+        public void IsPreserved_with_empty_list_returns_false()
+        {
+            Assert.False(UpdateInstaller.IsPreserved("anything.txt", Array.Empty<string>()));
+        }
+
+        [Fact]
+        public async Task SwapAsync_preserved_entry_is_not_moved_to_old()
+        {
+            using var work = new TempDir();
+            var installDir = work.Combine("install");
+            var sourceDir = work.Combine("src");
+            var oldDir = Path.Combine(installDir, ".old");
+            Directory.CreateDirectory(installDir);
+            Directory.CreateDirectory(sourceDir);
+            File.WriteAllText(Path.Combine(installDir, "appsettings.Development.json"), "user-config");
+            File.WriteAllText(Path.Combine(installDir, "binary.exe"), "old-binary");
+            File.WriteAllText(Path.Combine(sourceDir, "binary.exe"), "new-binary");
+
+            await UpdateInstaller.SwapAsync(
+                sourceDir, installDir, oldDir,
+                preservePaths: PreserveAppsettingsDevelopment,
+                onConflict: null,
+                CancellationToken.None);
+
+            // Preserved file untouched.
+            Assert.Equal("user-config", File.ReadAllText(Path.Combine(installDir, "appsettings.Development.json")));
+            Assert.False(File.Exists(Path.Combine(oldDir, "appsettings.Development.json")));
+            // Non-preserved file replaced.
+            Assert.Equal("new-binary", File.ReadAllText(Path.Combine(installDir, "binary.exe")));
+            Assert.Equal("old-binary", File.ReadAllText(Path.Combine(oldDir, "binary.exe")));
+        }
+
+        [Fact]
+        public async Task SwapAsync_when_release_conflicts_default_keeps_existing()
+        {
+            using var work = new TempDir();
+            var installDir = work.Combine("install");
+            var sourceDir = work.Combine("src");
+            var oldDir = Path.Combine(installDir, ".old");
+            Directory.CreateDirectory(installDir);
+            Directory.CreateDirectory(sourceDir);
+            File.WriteAllText(Path.Combine(installDir, "appsettings.json"), "user-edited");
+            File.WriteAllText(Path.Combine(sourceDir, "appsettings.json"), "release-default");
+
+            await UpdateInstaller.SwapAsync(
+                sourceDir, installDir, oldDir,
+                preservePaths: PreserveAppsettingsJson,
+                onConflict: null,                       // null → keep existing
+                CancellationToken.None);
+
+            Assert.Equal("user-edited", File.ReadAllText(Path.Combine(installDir, "appsettings.json")));
+            Assert.False(File.Exists(Path.Combine(oldDir, "appsettings.json")));
+        }
+
+        [Fact]
+        public async Task SwapAsync_when_resolver_returns_use_new_replaces_existing()
+        {
+            using var work = new TempDir();
+            var installDir = work.Combine("install");
+            var sourceDir = work.Combine("src");
+            var oldDir = Path.Combine(installDir, ".old");
+            Directory.CreateDirectory(installDir);
+            Directory.CreateDirectory(sourceDir);
+            File.WriteAllText(Path.Combine(installDir, "appsettings.json"), "user-edited");
+            File.WriteAllText(Path.Combine(sourceDir, "appsettings.json"), "release-default");
+
+            UpdateConflict? sawConflict = null;
+            Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>> resolver =
+                (c, _) => { sawConflict = c; return Task.FromResult(UpdateConflictResolution.UseNew); };
+
+            await UpdateInstaller.SwapAsync(
+                sourceDir, installDir, oldDir,
+                preservePaths: PreserveAppsettingsJson,
+                onConflict: resolver,
+                CancellationToken.None);
+
+            Assert.NotNull(sawConflict);
+            Assert.Equal("appsettings.json", sawConflict!.RelativePath);
+            Assert.Equal("release-default", File.ReadAllText(Path.Combine(installDir, "appsettings.json")));
+            // Previous user copy moved to .old/ (so the next-startup cleanup sweep removes it).
+            Assert.Equal("user-edited", File.ReadAllText(Path.Combine(oldDir, "appsettings.json")));
+        }
+
+        [Fact]
+        public async Task SwapAsync_preserved_glob_does_not_block_unrelated_release_files()
+        {
+            using var work = new TempDir();
+            var installDir = work.Combine("install");
+            var sourceDir = work.Combine("src");
+            var oldDir = Path.Combine(installDir, ".old");
+            Directory.CreateDirectory(installDir);
+            Directory.CreateDirectory(sourceDir);
+            File.WriteAllText(Path.Combine(installDir, "myapp.db"), "user-db");
+            File.WriteAllText(Path.Combine(installDir, "binary.exe"), "old-binary");
+            File.WriteAllText(Path.Combine(sourceDir, "binary.exe"), "new-binary");
+            // Note: source does NOT ship myapp.db.
+
+            await UpdateInstaller.SwapAsync(
+                sourceDir, installDir, oldDir,
+                preservePaths: PreserveDb,
+                onConflict: null,
+                CancellationToken.None);
+
+            Assert.Equal("user-db", File.ReadAllText(Path.Combine(installDir, "myapp.db")));
+            Assert.Equal("new-binary", File.ReadAllText(Path.Combine(installDir, "binary.exe")));
+        }
+
+        [Fact]
+        public async Task SwapAsync_preserved_path_introduced_by_new_release_when_user_has_none_just_copies()
+        {
+            using var work = new TempDir();
+            var installDir = work.Combine("install");
+            var sourceDir = work.Combine("src");
+            var oldDir = Path.Combine(installDir, ".old");
+            Directory.CreateDirectory(installDir);
+            Directory.CreateDirectory(sourceDir);
+            File.WriteAllText(Path.Combine(sourceDir, "appsettings.Production.json"), "release-default");
+
+            // The path is preservable but the user doesn't have a copy yet —
+            // installer should just place the new file with no resolver call.
+            var resolverCalled = false;
+            Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>> resolver =
+                (_, _) => { resolverCalled = true; return Task.FromResult(UpdateConflictResolution.KeepExisting); };
+
+            await UpdateInstaller.SwapAsync(
+                sourceDir, installDir, oldDir,
+                preservePaths: PreserveAppsettingsGlob,
+                onConflict: resolver,
+                CancellationToken.None);
+
+            Assert.False(resolverCalled);
+            Assert.Equal("release-default", File.ReadAllText(Path.Combine(installDir, "appsettings.Production.json")));
         }
 
         [Fact]

@@ -19,7 +19,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// latest release on the configured channel. Returns
         /// <see langword="null"/> when nothing is available. Use this when
         /// you want to display "what would be installed?" to the user
-        /// before calling <see cref="InstallAsync(RemoteRelease, IProgress{UpdateProgressEvent}, CancellationToken)"/>
+        /// before calling <see cref="InstallAsync(RemoteRelease, IProgress{UpdateProgressEvent}, Func{UpdateConflict, CancellationToken, Task{UpdateConflictResolution}}, CancellationToken)"/>
         /// — the same release instance can be passed to install so the
         /// displayed and installed versions are guaranteed to match (no
         /// TOCTOU window between display and install).
@@ -34,9 +34,18 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// user a specific release — passing it back avoids the second
         /// source query the parameterless overload performs.
         /// </summary>
+        /// <param name="release">The release to install.</param>
+        /// <param name="progress">Optional progress sink for stage-level events.</param>
+        /// <param name="onConflict">
+        /// Optional resolver invoked when a new release entry lands on a
+        /// path covered by <see cref="SelfUpdaterOptions.PreservePaths"/>.
+        /// <see langword="null"/> (default) keeps the user's existing file.
+        /// </param>
+        /// <param name="ct">Cancellation token.</param>
         Task InstallAsync(
             RemoteRelease release,
             IProgress<UpdateProgressEvent>? progress = null,
+            Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>? onConflict = null,
             CancellationToken ct = default);
 
         /// <summary>
@@ -47,7 +56,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// release returned by the source here may differ from the one a
         /// prior <see cref="CheckAsync"/> reported. For interactive UIs,
         /// prefer the <see cref="GetLatestReleaseAsync"/> +
-        /// <see cref="InstallAsync(RemoteRelease, IProgress{UpdateProgressEvent}, CancellationToken)"/>
+        /// <see cref="InstallAsync(RemoteRelease, IProgress{UpdateProgressEvent}, Func{UpdateConflict, CancellationToken, Task{UpdateConflictResolution}}, CancellationToken)"/>
         /// pair so the user confirms exactly the release that gets
         /// installed.
         /// </summary>

@@ -21,10 +21,21 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// </summary>
         /// <param name="release">The resolved release to install.</param>
         /// <param name="progress">Optional progress sink for stage-level events.</param>
+        /// <param name="onConflict">
+        /// Optional resolver invoked when a new release entry lands on a
+        /// path covered by <see cref="SelfUpdaterOptions.PreservePaths"/>.
+        /// <see langword="null"/> (default) means
+        /// <see cref="UpdateConflictResolution.KeepExisting"/> — the user's
+        /// file is left in place and the new release's copy is discarded
+        /// for that path. Resolvers are called once per conflicting entry,
+        /// in deterministic order, and may return different decisions per
+        /// entry.
+        /// </param>
         /// <param name="ct">Cancellation token.</param>
         Task InstallAsync(
             RemoteRelease release,
             IProgress<UpdateProgressEvent>? progress = null,
+            Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>? onConflict = null,
             CancellationToken ct = default);
 
         /// <summary>
