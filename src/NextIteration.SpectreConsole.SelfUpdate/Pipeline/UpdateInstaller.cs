@@ -58,7 +58,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 
         public string InstallDirectory => _installDirResolver();
 
-        public async Task InstallAsync(RemoteRelease release, IProgress<UpdateProgressEvent>? progress = null, CancellationToken ct = default)
+        public async Task InstallAsync(
+            RemoteRelease release,
+            IProgress<UpdateProgressEvent>? progress = null,
+            Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>? onConflict = null,
+            CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(release);
 
@@ -111,7 +115,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 progress?.Report(new UpdateProgressEvent(UpdateStage.Extracting, 1));
 
                 progress?.Report(new UpdateProgressEvent(UpdateStage.Swapping, 0));
-                Swap(sourceDir, installDir, oldDir);
+                await SwapAsync(sourceDir, installDir, oldDir, _options.PreservePaths, onConflict, ct).ConfigureAwait(false);
                 progress?.Report(new UpdateProgressEvent(UpdateStage.Swapping, 1));
             }
             finally
@@ -169,7 +173,20 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             return extractedDirectory;
         }
 
-        internal static void Swap(string sourceDirectory, string installDirectory, string oldDirectory)
+        // Backwards-compatible synchronous Swap, retained for callers that
+        // don't need preserve-path or conflict-resolution semantics.
+        // Equivalent to SwapAsync(..., preservePaths: empty, onConflict: null).
+        internal static void Swap(string sourceDirectory, string installDirectory, string oldDirectory) =>
+            SwapAsync(sourceDirectory, installDirectory, oldDirectory, Array.Empty<string>(), onConflict: null, CancellationToken.None)
+                .GetAwaiter().GetResult();
+
+        internal static async Task SwapAsync(
+            string sourceDirectory,
+            string installDirectory,
+            string oldDirectory,
+            IReadOnlyList<string> preservePaths,
+            Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>? onConflict,
+            CancellationToken ct)
         {
             // Reset .old/ — it should be empty going in.
             if (Directory.Exists(oldDirectory))
@@ -178,9 +195,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             }
             Directory.CreateDirectory(oldDirectory);
 
-            // Phase 1: move install/ contents (except maintenance) → .old/.
-            // Track what we moved so a failure mid-loop can restore the
-            // partial move and leave the install dir as we found it.
+            // Phase 1: move install/ contents (except maintenance and
+            // preserved entries) → .old/. Track what we moved so a failure
+            // mid-loop can restore the partial move and leave the install
+            // dir as we found it.
             var movedNames = new List<string>();
             try
             {
@@ -188,6 +206,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 {
                     var name = Path.GetFileName(entry);
                     if (IsMaintenanceEntry(name)) continue;
+                    if (IsPreserved(name, preservePaths)) continue;
 
                     var dest = Path.Combine(oldDirectory, name);
                     if (File.Exists(entry))
@@ -207,16 +226,48 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 throw;
             }
 
-            // Phase 2: copy new entries in. Track each placed entry so a
-            // failure mid-copy can rip out the partial replacement and
-            // restore the previous install from .old/.
+            // Phase 2: copy new entries in. When a new entry lands on a
+            // preserved path, ask the resolver (or default to KeepExisting).
+            // Track each placed entry so a failure mid-copy can rip out
+            // the partial replacement and restore the previous install
+            // from .old/.
             var copiedNames = new List<string>();
             try
             {
                 foreach (var entry in Directory.EnumerateFileSystemEntries(sourceDirectory))
                 {
+                    ct.ThrowIfCancellationRequested();
                     var name = Path.GetFileName(entry);
                     var dest = Path.Combine(installDirectory, name);
+
+                    // Conflict path: source ships an entry whose top-level
+                    // name matches a preserved pattern.
+                    if (IsPreserved(name, preservePaths))
+                    {
+                        var existingExists = File.Exists(dest) || Directory.Exists(dest);
+                        if (existingExists)
+                        {
+                            var resolution = await ResolveConflictAsync(name, dest, entry, onConflict, ct).ConfigureAwait(false);
+                            if (resolution == UpdateConflictResolution.KeepExisting)
+                            {
+                                // User's file wins — drop the new entry on the floor.
+                                continue;
+                            }
+                            // UseNew: the existing preserved entry wasn't
+                            // moved in Phase 1; do it inline now so the
+                            // copy below has somewhere clean to land and
+                            // rollback restores the right thing on failure.
+                            var oldDest = Path.Combine(oldDirectory, name);
+                            TryDeleteEntry(oldDest);
+                            if (File.Exists(dest)) File.Move(dest, oldDest);
+                            else if (Directory.Exists(dest)) Directory.Move(dest, oldDest);
+                            movedNames.Add(name);
+                        }
+                        // else: a new release introduces a path that the
+                        // user marked as preservable but doesn't exist
+                        // locally. Treat as a normal copy.
+                    }
+
                     if (File.Exists(entry))
                     {
                         File.Copy(entry, dest, overwrite: true);
@@ -237,6 +288,55 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 RestoreFromOld(oldDirectory, installDirectory, movedNames);
                 throw;
             }
+        }
+
+        private static async Task<UpdateConflictResolution> ResolveConflictAsync(
+            string name,
+            string existingPath,
+            string newPath,
+            Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>? onConflict,
+            CancellationToken ct)
+        {
+            if (onConflict is null)
+            {
+                return UpdateConflictResolution.KeepExisting;
+            }
+
+            long? existingSize = File.Exists(existingPath) ? new FileInfo(existingPath).Length : null;
+            long? newSize = File.Exists(newPath) ? new FileInfo(newPath).Length : null;
+            var conflict = new UpdateConflict(name.Replace(Path.DirectorySeparatorChar, '/'), existingSize, newSize);
+            return await onConflict(conflict, ct).ConfigureAwait(false);
+        }
+
+        internal static bool IsPreserved(string name, IReadOnlyList<string> preservePaths)
+        {
+            if (preservePaths.Count == 0) return false;
+            foreach (var pattern in preservePaths)
+            {
+                if (string.IsNullOrWhiteSpace(pattern)) continue;
+                // Take the part of the pattern before the first slash —
+                // this lets `data/**`, `data/seed.json`, and bare `data`
+                // all match the top-level entry `data`. Nested-only
+                // preservation (e.g. preserve only `data/seed.json` but
+                // not the rest of `data/`) is out of scope for v0.1.x.
+                var head = TopLevelSegment(pattern);
+                if (head.Length == 0) continue;
+                if (System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(head, name, ignoreCase: true))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static ReadOnlySpan<char> TopLevelSegment(string pattern)
+        {
+            ReadOnlySpan<char> span = pattern;
+            for (var i = 0; i < span.Length; i++)
+            {
+                if (span[i] == '/' || span[i] == '\\') return span[..i];
+            }
+            return span;
         }
 
         // Move every named entry from .old/ back into install/, replacing

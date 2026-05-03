@@ -6,7 +6,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
         public Func<CancellationToken, Task<UpdateInfo?>>? CheckImpl { get; set; }
         public Func<CancellationToken, Task<RemoteRelease?>>? GetLatestImpl { get; set; }
         public Func<IProgress<UpdateProgressEvent>?, CancellationToken, Task>? InstallImpl { get; set; }
-        public Func<RemoteRelease, IProgress<UpdateProgressEvent>?, CancellationToken, Task>? InstallReleaseImpl { get; set; }
+        public Func<RemoteRelease, IProgress<UpdateProgressEvent>?, Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>?, CancellationToken, Task>? InstallReleaseImpl { get; set; }
 
         public Task<UpdateInfo?> CheckAsync(CancellationToken ct = default) =>
             CheckImpl?.Invoke(ct) ?? Task.FromResult<UpdateInfo?>(null);
@@ -14,8 +14,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
         public Task<RemoteRelease?> GetLatestReleaseAsync(CancellationToken ct = default) =>
             GetLatestImpl?.Invoke(ct) ?? Task.FromResult<RemoteRelease?>(null);
 
-        public Task InstallAsync(RemoteRelease release, IProgress<UpdateProgressEvent>? progress = null, CancellationToken ct = default) =>
-            InstallReleaseImpl?.Invoke(release, progress, ct) ?? Task.CompletedTask;
+        public Task InstallAsync(
+            RemoteRelease release,
+            IProgress<UpdateProgressEvent>? progress = null,
+            Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>? onConflict = null,
+            CancellationToken ct = default) =>
+            InstallReleaseImpl?.Invoke(release, progress, onConflict, ct) ?? Task.CompletedTask;
 
         public Task InstallAsync(IProgress<UpdateProgressEvent>? progress = null, CancellationToken ct = default) =>
             InstallImpl?.Invoke(progress, ct) ?? Task.CompletedTask;
@@ -38,8 +42,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
     {
         public string InstallDirectory { get; set; } = "/tmp/install";
 
-        public Task InstallAsync(RemoteRelease release, IProgress<UpdateProgressEvent>? progress = null, CancellationToken ct = default) =>
-            Task.CompletedTask;
+        public Task InstallAsync(
+            RemoteRelease release,
+            IProgress<UpdateProgressEvent>? progress = null,
+            Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>? onConflict = null,
+            CancellationToken ct = default) => Task.CompletedTask;
 
         public void CleanupOldInstall() { }
     }

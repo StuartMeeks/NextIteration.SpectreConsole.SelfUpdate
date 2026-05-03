@@ -92,7 +92,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
                 configUpdater: u =>
                 {
                     u.GetLatestImpl = _ => Task.FromResult<RemoteRelease?>(ReleaseV142);
-                    u.InstallReleaseImpl = (_, _, _) =>
+                    u.InstallReleaseImpl = (_, _, _, _) =>
                     {
                         installCalls++;
                         return Task.CompletedTask;
@@ -118,7 +118,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
                 configUpdater: u =>
                 {
                     u.GetLatestImpl = _ => Task.FromResult<RemoteRelease?>(ReleaseV142);
-                    u.InstallReleaseImpl = (release, _, _) =>
+                    u.InstallReleaseImpl = (release, _, _, _) =>
                     {
                         receivedRelease = release;
                         return Task.CompletedTask;
@@ -148,7 +148,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
                         parameterlessCalls++;
                         return Task.CompletedTask;
                     };
-                    u.InstallReleaseImpl = (_, _, _) => Task.CompletedTask;
+                    u.InstallReleaseImpl = (_, _, _, _) => Task.CompletedTask;
                 });
 
             await run("--yes");
@@ -164,7 +164,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
                 configUpdater: u =>
                 {
                     u.GetLatestImpl = _ => Task.FromResult<RemoteRelease?>(ReleaseV142);
-                    u.InstallReleaseImpl = (_, _, _) => throw new UpdateException("boom");
+                    u.InstallReleaseImpl = (_, _, _, _) => throw new UpdateException("boom");
                 });
 
             var exit = await run("--yes");
@@ -183,7 +183,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
                 configUpdater: u =>
                 {
                     u.GetLatestImpl = _ => Task.FromResult<RemoteRelease?>(ReleaseV142);
-                    u.InstallReleaseImpl = (_, _, _) =>
+                    u.InstallReleaseImpl = (_, _, _, _) =>
                     {
                         installCalls++;
                         return Task.CompletedTask;

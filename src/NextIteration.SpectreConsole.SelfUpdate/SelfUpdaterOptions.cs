@@ -115,6 +115,31 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// </summary>
         public bool AllowInsecureManifestSource { get; set; }
 
+        /// <summary>
+        /// Glob patterns identifying files and directories the installer
+        /// should leave alone during an update. Patterns are matched
+        /// against the path relative to the install directory using
+        /// forward-slash separators, e.g.
+        /// <c>"appsettings.Development.json"</c>, <c>"appsettings.*.json"</c>,
+        /// <c>"data/**"</c>. <c>**</c> matches any number of path segments;
+        /// <c>*</c> matches any run of non-separator characters.
+        /// <para>
+        /// Matched entries are skipped in both phases of the swap:
+        /// they are not moved into <c>.old/</c>, and a new release entry
+        /// landing on a preserved path is resolved by the conflict
+        /// resolver passed to <see cref="ISelfUpdater.InstallAsync(RemoteRelease, IProgress{UpdateProgressEvent}, Func{UpdateConflict, System.Threading.CancellationToken, System.Threading.Tasks.Task{UpdateConflictResolution}}, System.Threading.CancellationToken)"/>
+        /// (default: keep the existing user file).
+        /// </para>
+        /// <para>
+        /// Defaults to empty — the installer treats every entry in the
+        /// install directory as package-owned. Add patterns for any user-
+        /// editable config (<c>appsettings.Development.json</c>),
+        /// per-machine state (<c>*.db</c>, <c>logs/**</c>), or anything
+        /// the consumer wouldn't want to lose across an upgrade.
+        /// </para>
+        /// </summary>
+        public IReadOnlyList<string> PreservePaths { get; set; } = Array.Empty<string>();
+
         // ---------- Source registration ----------
 
         /// <summary>
