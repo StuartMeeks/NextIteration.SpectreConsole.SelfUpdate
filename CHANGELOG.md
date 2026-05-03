@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Symbol packaging (planned 0.1.2)
+- **`<DebugType>portable</DebugType>`** instead of `embedded`. The previous combination produced an empty `.snupkg` (no `.pdb` files because debug info was inside the `.dll`), which nuget.org rejects with HTTP 400. The published `.nupkg` is now slightly smaller, and the `.snupkg` actually contains symbols so consumers debugging into the library get sources via nuget.org's symbol server.
+
 ### Security & correctness fixes (planned 0.1.1)
 - **Lock before staging mutation.** `UpdateInstaller.InstallAsync` now acquires `.update.lock` before any change to `.update/<tag>/`. Previously a second installer could wipe a first installer's in-flight staging directory on its way to losing the lock race.
 - **Rollback on swap failure.** A copy failure mid-swap now restores the install directory from `.old/` instead of leaving it half-populated. New `UpdateInstaller.RestoreFromOld` helper.
