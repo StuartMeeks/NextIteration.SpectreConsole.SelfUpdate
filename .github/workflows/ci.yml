@@ -3,11 +3,12 @@ name: CI
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# Build + test + pack on every push to main and every PR. Tag pushes are
+# handled by .github/workflows/release.yml — that workflow runs the same
+# build/test plus publishes to nuget.org.
 on:
   push:
     branches: [ main ]
-    tags:
-      - 'v*'
   pull_request:
     branches: [ main ]
 
@@ -57,26 +58,3 @@ jobs:
 
       - name: Test
         run: dotnet test --configuration Release --verbosity normal
-
-  publish:
-    needs: [ build, test ]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Download artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: nuget-package
-          path: ./artifacts
-
-      - name: Publish to NuGet
-        run: dotnet nuget push "./artifacts/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
