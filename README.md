@@ -226,6 +226,19 @@ services.AddSelfUpdater(opts =>
 });
 ```
 
+> **One-time gotcha when adopting `PreservePaths`.** This option was
+> introduced in v0.1.3. The first time a user upgrades *from* a
+> pre-0.1.3 build of your CLI *to* a 0.1.3+ build, the swap is
+> performed by the **old** binary's update code — which doesn't know
+> about `PreservePaths` and will move every file (including the ones
+> you intend to preserve) into `.old/`, where they're wiped on the
+> next launch. From the *next* update onwards (a 0.1.3+ binary
+> upgrading to a newer 0.1.3+ binary), preservation works as
+> documented. If your users already have important state in the
+> install directory before this change ships, document a one-shot
+> manual backup step or have your CLI bootstrap missing files on
+> first launch after the upgrade.
+
 Patterns match the **top-level entry name** (the part before the first
 `/` in the pattern). `data/**` and `data/seed.json` both preserve the
 whole `data/` directory; nested-only preservation isn't supported in
