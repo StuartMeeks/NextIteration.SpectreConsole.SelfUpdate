@@ -291,6 +291,90 @@ per file via Spectre's `Confirm`.
 
 ---
 
+## Working with `appsettings.json` across updates
+
+A common question when shipping a CLI: "users edit `appsettings.json` to
+set their connection strings — how do I keep their edits without
+losing the new options I add in a new release?"
+
+**The package's strong recommendation: don't try to merge.** Use the
+.NET layering convention instead, where `appsettings.json` is *defaults
+shipped by the package* and `appsettings.{Environment}.json` (or
+`appsettings.Local.json`, environment variables, Azure App
+Configuration, etc.) is *the user's overrides*. `IConfiguration`
+overlays them at runtime — the merge happens in memory, with no file
+on disk to reconcile.
+
+With that convention:
+
+```csharp
+opts.PreservePaths = new[]
+{
+    "appsettings.Development.json",   // user-owned overrides — preserve
+    "appsettings.Local.json",         // user-owned overrides — preserve
+    // appsettings.json is package-owned — let new releases update it
+};
+```
+
+A user who currently has connection strings in `appsettings.json`
+should move them to `appsettings.Local.json` (or set
+`ASPNETCORE_ENVIRONMENT` and use `appsettings.{Environment}.json`).
+One-time migration; zero ongoing complexity. The base
+`appsettings.json` keeps shipping new defaults and feature toggles
+without ever clobbering user config.
+
+### When you really do need to merge two JSON files
+
+If you can't move users to layered overrides — say a third-party tool
+expects `appsettings.json` to be hand-edited — the `onConflict`
+resolver is enough of an escape hatch to do a surgical merge. Keep
+`appsettings.json` in `PreservePaths`, then in the resolver: read both
+files, merge them however you like, write the result to the install
+directory, and return `KeepExisting` so the installer leaves the
+freshly-merged file alone:
+
+```csharp
+opts.PreservePaths = new[] { "appsettings.json" };
+
+await selfUpdater.InstallAsync(release, progress, onConflict: (conflict, ct) =>
+{
+    if (conflict.RelativePath == "appsettings.json")
+    {
+        var existingPath = Path.Combine(installer.InstallDirectory, "appsettings.json");
+        var newPath      = Path.Combine(stagingForThisRun, "appsettings.json");
+
+        // Bring your own merger — JsonNode walk, JObject.Merge, whatever
+        // matches your file's shape. Comments and formatting are
+        // typically lost on a JSON round-trip; consider that a reason
+        // to prefer layered overrides instead.
+        var merged = MergeJson(existingPath, newPath);
+        File.WriteAllText(existingPath, merged);
+
+        // Tell the installer "I've handled it — don't overwrite".
+        return Task.FromResult(UpdateConflictResolution.KeepExisting);
+    }
+    return Task.FromResult(UpdateConflictResolution.KeepExisting);
+});
+```
+
+A few caveats worth knowing:
+
+- **Without a base version, you can't tell user-modified from
+  unchanged.** If the user has `LogLevel.Default = "Warning"` and the
+  new release ships `"Information"`, was the user being deliberate or
+  did they just inherit the previous default? A robust merger would
+  need to persist the previous release's `appsettings.json` somewhere
+  to use as a diff base.
+- **JSON round-trips drop comments and reformat.** Consumers who use
+  inline comments in their config will notice.
+- **No built-in merger ships with this package.** Config-file
+  semantics are app-specific (deep-merge vs replace, array-append vs
+  array-replace, …) and end up being a tar pit. The package stops at
+  "preserve or overwrite per file"; merging policy belongs in the
+  consumer.
+
+---
+
 ## Configuration reference
 
 | Property | Default | Description |
