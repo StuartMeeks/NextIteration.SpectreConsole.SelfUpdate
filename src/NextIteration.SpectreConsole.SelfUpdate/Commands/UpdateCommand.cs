@@ -64,10 +64,13 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
             var current = _checker.GetCurrentVersion() ?? "dev";
             _console.MarkupLineInterpolated(CultureInfo.InvariantCulture, $"Current version: [bold]{current}[/]");
 
-            UpdateInfo? info;
+            // Fetch the release once and use it for both display and install,
+            // so the user confirms exactly the release that gets installed
+            // (no TOCTOU window between "what's latest?" and "install latest").
+            RemoteRelease? release;
             try
             {
-                info = await _checker.CheckAsync(cancellationToken).ConfigureAwait(false);
+                release = await _selfUpdater.GetLatestReleaseAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -76,21 +79,21 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
                 return 1;
             }
 
-            if (info is null)
+            if (release is null)
             {
                 _console.MarkupLine("[red]Could not determine the latest release. The update source returned no result.[/]");
                 return 1;
             }
 
-            _console.MarkupLineInterpolated(CultureInfo.InvariantCulture, $"Latest release: [bold]{info.LatestTag}[/]");
+            _console.MarkupLineInterpolated(CultureInfo.InvariantCulture, $"Latest release: [bold]{release.Tag}[/]");
 
-            if (!settings.Force && !info.IsUpdateAvailable)
+            if (!settings.Force && !IsUpdateAvailable(current, release.Tag))
             {
                 _console.MarkupLine("[green]Already up to date.[/]");
                 return 0;
             }
 
-            if (!settings.Yes && !PromptToContinue(info))
+            if (!settings.Yes && !PromptToContinue(release.Tag))
             {
                 _console.MarkupLine("Aborted.");
                 return 2;
@@ -102,7 +105,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
                 {
                     var progress = new Progress<UpdateProgressEvent>(evt =>
                         statusContext.Status(StageLabel(evt.Stage)));
-                    await _selfUpdater.InstallAsync(progress, cancellationToken).ConfigureAwait(false);
+                    await _selfUpdater.InstallAsync(release, progress, cancellationToken).ConfigureAwait(false);
                 }).ConfigureAwait(false);
             }
             catch (UpdateException ex)
@@ -112,15 +115,22 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
             }
 
             _console.MarkupLineInterpolated(CultureInfo.InvariantCulture,
-                $"[green]Installed [bold]{info.LatestTag}[/]. Re-run the CLI to use the new version.[/]");
+                $"[green]Installed [bold]{release.Tag}[/]. Re-run the CLI to use the new version.[/]");
             return 0;
         }
 
-        private bool PromptToContinue(UpdateInfo info)
+        private bool PromptToContinue(string tag)
         {
             return _console.Confirm(
-                $"Install [bold]{info.LatestTag}[/] over the current install in {Markup.Escape(_installer.InstallDirectory)}?",
+                $"Install [bold]{tag}[/] over the current install in {Markup.Escape(_installer.InstallDirectory)}?",
                 defaultValue: true);
+        }
+
+        private static bool IsUpdateAvailable(string current, string latestTag)
+        {
+            // Defer to the same comparator the checker uses so behaviour is
+            // identical between the cached probe and this fresh one.
+            return Pipeline.UpdateChecker.IsNewer(current, latestTag);
         }
 
         private static string StageLabel(UpdateStage stage) => stage switch

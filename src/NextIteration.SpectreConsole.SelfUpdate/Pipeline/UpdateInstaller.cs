@@ -66,14 +66,24 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             var asset = _resolver.Resolve(release, rid)
                 ?? throw new UpdateException(BuildNoMatchMessage(release, rid));
 
+            // Validate up front — reject path traversal / rooted / multi-segment
+            // names from the source so nothing it publishes can write outside
+            // the staging directory.
+            ValidateAssetName(asset.Name);
+
             var installDir = InstallDirectory;
             var stagingDir = Path.Combine(installDir, StagingDirName, SanitizeTag(release.Tag));
             var oldDir = Path.Combine(installDir, OldDirName);
             var lockFile = Path.Combine(installDir, LockFileName);
 
-            ResetStaging(stagingDir);
-
+            // Acquire the lock BEFORE touching the staging tree. Otherwise a
+            // second installer can wipe a first installer's in-flight staging
+            // directory on its way to losing the lock race, corrupting the
+            // first install.
+            Directory.CreateDirectory(installDir);
             using var lockStream = InstallLock.Acquire(lockFile, installDir);
+
+            ResetStaging(stagingDir);
 
             try
             {
@@ -161,42 +171,115 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 
         internal static void Swap(string sourceDirectory, string installDirectory, string oldDirectory)
         {
-            // Move existing entries (skipping maintenance dirs) to .old/
+            // Reset .old/ — it should be empty going in.
             if (Directory.Exists(oldDirectory))
             {
                 Directory.Delete(oldDirectory, recursive: true);
             }
             Directory.CreateDirectory(oldDirectory);
 
-            foreach (var entry in Directory.EnumerateFileSystemEntries(installDirectory))
+            // Phase 1: move install/ contents (except maintenance) → .old/.
+            // Track what we moved so a failure mid-loop can restore the
+            // partial move and leave the install dir as we found it.
+            var movedNames = new List<string>();
+            try
             {
-                var name = Path.GetFileName(entry);
-                if (IsMaintenanceEntry(name)) continue;
+                foreach (var entry in Directory.EnumerateFileSystemEntries(installDirectory))
+                {
+                    var name = Path.GetFileName(entry);
+                    if (IsMaintenanceEntry(name)) continue;
 
-                var dest = Path.Combine(oldDirectory, name);
-                if (File.Exists(entry))
-                {
-                    File.Move(entry, dest);
-                }
-                else
-                {
-                    Directory.Move(entry, dest);
+                    var dest = Path.Combine(oldDirectory, name);
+                    if (File.Exists(entry))
+                    {
+                        File.Move(entry, dest);
+                    }
+                    else
+                    {
+                        Directory.Move(entry, dest);
+                    }
+                    movedNames.Add(name);
                 }
             }
-
-            // Copy new files in.
-            foreach (var entry in Directory.EnumerateFileSystemEntries(sourceDirectory))
+            catch
             {
-                var name = Path.GetFileName(entry);
+                RestoreFromOld(oldDirectory, installDirectory, movedNames);
+                throw;
+            }
+
+            // Phase 2: copy new entries in. Track each placed entry so a
+            // failure mid-copy can rip out the partial replacement and
+            // restore the previous install from .old/.
+            var copiedNames = new List<string>();
+            try
+            {
+                foreach (var entry in Directory.EnumerateFileSystemEntries(sourceDirectory))
+                {
+                    var name = Path.GetFileName(entry);
+                    var dest = Path.Combine(installDirectory, name);
+                    if (File.Exists(entry))
+                    {
+                        File.Copy(entry, dest, overwrite: true);
+                    }
+                    else
+                    {
+                        CopyDirectory(entry, dest);
+                    }
+                    copiedNames.Add(name);
+                }
+            }
+            catch
+            {
+                foreach (var name in copiedNames)
+                {
+                    TryDeleteEntry(Path.Combine(installDirectory, name));
+                }
+                RestoreFromOld(oldDirectory, installDirectory, movedNames);
+                throw;
+            }
+        }
+
+        // Move every named entry from .old/ back into install/, replacing
+        // anything currently at the destination. Best-effort — any single
+        // entry that can't be restored is logged silently; the original
+        // pipeline exception still surfaces to the caller, which is the
+        // useful signal.
+        internal static void RestoreFromOld(string oldDirectory, string installDirectory, IReadOnlyList<string> names)
+        {
+            foreach (var name in names)
+            {
+                var src = Path.Combine(oldDirectory, name);
                 var dest = Path.Combine(installDirectory, name);
-                if (File.Exists(entry))
+                try
                 {
-                    File.Copy(entry, dest, overwrite: true);
+                    TryDeleteEntry(dest);
+                    if (File.Exists(src))
+                    {
+                        File.Move(src, dest);
+                    }
+                    else if (Directory.Exists(src))
+                    {
+                        Directory.Move(src, dest);
+                    }
                 }
-                else
+                catch
                 {
-                    CopyDirectory(entry, dest);
+                    // Best effort — partial-restore failures are surfaced
+                    // implicitly through the pipeline exception.
                 }
+            }
+        }
+
+        private static void TryDeleteEntry(string path)
+        {
+            try
+            {
+                if (File.Exists(path)) File.Delete(path);
+                else if (Directory.Exists(path)) Directory.Delete(path, recursive: true);
+            }
+            catch
+            {
+                // Best effort.
             }
         }
 
@@ -214,6 +297,36 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 var target = Path.Combine(destination, relative);
                 Directory.CreateDirectory(Path.GetDirectoryName(target)!);
                 File.Copy(file, target, overwrite: true);
+            }
+        }
+
+        internal static void ValidateAssetName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new UpdateException("Refusing to install: release asset has no name.");
+            }
+            if (name.Contains('\0', StringComparison.Ordinal))
+            {
+                throw new UpdateException($"Refusing to install asset '{name}': contains a null character.");
+            }
+            if (name.Contains('/', StringComparison.Ordinal)
+                || name.Contains('\\', StringComparison.Ordinal)
+                || name.Equals("..", StringComparison.Ordinal)
+                || name.Equals(".", StringComparison.Ordinal))
+            {
+                throw new UpdateException(
+                    $"Refusing to install asset '{name}': name must be a single file segment with no path separators or parent references.");
+            }
+            if (Path.IsPathRooted(name))
+            {
+                throw new UpdateException(
+                    $"Refusing to install asset '{name}': name must not be a rooted path.");
+            }
+            if (!string.Equals(Path.GetFileName(name), name, StringComparison.Ordinal))
+            {
+                throw new UpdateException(
+                    $"Refusing to install asset '{name}': resolves to a different file segment.");
             }
         }
 

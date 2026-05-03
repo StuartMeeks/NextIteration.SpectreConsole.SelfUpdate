@@ -103,6 +103,18 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// </summary>
         public bool UseDefaultSha256Verifier { get; set; } = true;
 
+        /// <summary>
+        /// When <see langword="false"/> (default) the
+        /// <see cref="Sources.HttpManifestSource"/> rejects non-<c>https</c>
+        /// manifest URLs and non-<c>https</c> asset download URLs. Set to
+        /// <see langword="true"/> to allow plain HTTP — useful for tests,
+        /// internal mirrors on a trusted network, and local development.
+        /// Production deployments should always leave this as
+        /// <see langword="false"/>: the SHA in an HTTP-served manifest is
+        /// equally MITM-able, so plain HTTP defeats the verifier.
+        /// </summary>
+        public bool AllowInsecureManifestSource { get; set; }
+
         // ---------- Source registration ----------
 
         /// <summary>

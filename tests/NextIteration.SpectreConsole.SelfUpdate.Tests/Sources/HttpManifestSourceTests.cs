@@ -85,5 +85,66 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Sources
 
             Assert.Equal(payload, ms.ToArray());
         }
+
+        [Fact]
+        public void Constructor_when_manifest_url_is_http_throws_by_default()
+        {
+            var insecure = new Uri("http://example.com/latest.json");
+            var ex = Assert.Throws<ArgumentException>(() =>
+                new HttpManifestSource(new FakeHttpClientFactory(new FakeHttpHandler()), insecure));
+            Assert.Contains("HTTPS", ex.Message, StringComparison.Ordinal);
+            Assert.Contains("AllowInsecureManifestSource", ex.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void Constructor_when_allow_insecure_accepts_http_manifest_url()
+        {
+            var insecure = new Uri("http://example.com/latest.json");
+            // Does not throw.
+            _ = new HttpManifestSource(new FakeHttpClientFactory(new FakeHttpHandler()), insecure, allowInsecure: true);
+        }
+
+        [Fact]
+        public async Task DownloadAssetAsync_when_asset_url_is_http_throws_by_default()
+        {
+            var source = new HttpManifestSource(new FakeHttpClientFactory(new FakeHttpHandler()), ManifestUrl);
+
+            var asset = new ReleaseAsset(
+                Name: "myapp.tar.gz",
+                DownloadUrl: new Uri("http://example.com/dl/myapp.tar.gz"),
+                SizeBytes: null,
+                ContentType: null,
+                Metadata: new Dictionary<string, string>());
+
+            using var ms = new MemoryStream();
+            var ex = await Assert.ThrowsAsync<UpdateException>(() =>
+                source.DownloadAssetAsync(asset, ms, progress: null, CancellationToken.None));
+            Assert.Contains("Refusing to download", ex.Message, StringComparison.Ordinal);
+            Assert.Contains("http://", ex.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task DownloadAssetAsync_when_allow_insecure_accepts_http_asset_url()
+        {
+            var payload = new byte[] { 0x01, 0x02 };
+            var assetUrl = new Uri("http://example.com/dl/asset.tar.gz");
+            var handler = new FakeHttpHandler
+            {
+                Responder = req => req.RequestUri == assetUrl
+                    ? FakeHttpHandler.Bytes(payload)
+                    : throw new InvalidOperationException("unexpected request URI"),
+            };
+            var source = new HttpManifestSource(
+                new FakeHttpClientFactory(handler),
+                new Uri("http://example.com/latest.json"),
+                allowInsecure: true);
+
+            using var ms = new MemoryStream();
+            var asset = new ReleaseAsset("asset.tar.gz", assetUrl, payload.LongLength, null, new Dictionary<string, string>());
+
+            await source.DownloadAssetAsync(asset, ms, progress: null, CancellationToken.None);
+
+            Assert.Equal(payload, ms.ToArray());
+        }
     }
 }

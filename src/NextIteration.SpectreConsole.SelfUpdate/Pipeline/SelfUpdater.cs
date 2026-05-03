@@ -33,6 +33,15 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         public Task<UpdateInfo?> CheckAsync(CancellationToken ct = default) =>
             _checker.CheckAsync(ct);
 
+        public Task<RemoteRelease?> GetLatestReleaseAsync(CancellationToken ct = default) =>
+            _source.GetLatestAsync(_options.Channel, ct);
+
+        public Task InstallAsync(RemoteRelease release, IProgress<UpdateProgressEvent>? progress = null, CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(release);
+            return _installer.InstallAsync(release, progress, ct);
+        }
+
         public async Task InstallAsync(IProgress<UpdateProgressEvent>? progress = null, CancellationToken ct = default)
         {
             var release = await _source.GetLatestAsync(_options.Channel, ct).ConfigureAwait(false);

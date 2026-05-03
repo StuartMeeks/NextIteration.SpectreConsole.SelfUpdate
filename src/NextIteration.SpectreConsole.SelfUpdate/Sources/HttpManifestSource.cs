@@ -59,18 +59,41 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
 
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly Uri _manifestUrl;
+        private readonly bool _allowInsecure;
 
-        /// <summary>Initializes a new instance.</summary>
+        /// <summary>Initializes a new HTTPS-only instance.</summary>
         /// <param name="httpClientFactory">DI-resolved factory used per call.</param>
-        /// <param name="manifestUrl">Absolute URL of the JSON manifest.</param>
+        /// <param name="manifestUrl">Absolute URL of the JSON manifest. Must be <c>https</c>.</param>
         public HttpManifestSource(IHttpClientFactory httpClientFactory, Uri manifestUrl)
+            : this(httpClientFactory, manifestUrl, allowInsecure: false)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance, optionally allowing plain HTTP. Plain
+        /// HTTP defeats SHA-256 verification (the manifest's SHA can be
+        /// swapped in transit), so the insecure mode is only for tests,
+        /// internal mirrors on a trusted network, and local development.
+        /// </summary>
+        public HttpManifestSource(IHttpClientFactory httpClientFactory, Uri manifestUrl, bool allowInsecure)
         {
             ArgumentNullException.ThrowIfNull(httpClientFactory);
             ArgumentNullException.ThrowIfNull(manifestUrl);
 
+            if (!allowInsecure && !IsHttps(manifestUrl))
+            {
+                throw new ArgumentException(
+                    $"Manifest URL must use HTTPS. Got '{manifestUrl}'. To allow plain HTTP for tests or trusted networks, set SelfUpdaterOptions.AllowInsecureManifestSource = true.",
+                    nameof(manifestUrl));
+            }
+
             _httpClientFactory = httpClientFactory;
             _manifestUrl = manifestUrl;
+            _allowInsecure = allowInsecure;
         }
+
+        private static bool IsHttps(Uri uri) =>
+            string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
 
         /// <inheritdoc />
         public async Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct)
@@ -116,6 +139,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
             {
                 throw new UpdateException(
                     $"Cannot download asset '{asset.Name}': the manifest did not publish a download URL.");
+            }
+            if (!_allowInsecure && !IsHttps(asset.DownloadUrl))
+            {
+                throw new UpdateException(
+                    $"Refusing to download asset '{asset.Name}' over insecure URL '{asset.DownloadUrl}'. Set SelfUpdaterOptions.AllowInsecureManifestSource = true to permit plain HTTP for tests or trusted networks.");
             }
 
             using var http = _httpClientFactory.CreateClient();

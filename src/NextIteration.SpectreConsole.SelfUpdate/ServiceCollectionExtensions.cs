@@ -103,7 +103,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate
                 case UpdateSourceKind.HttpManifest:
                     services.AddSingleton<IUpdateSource>(sp => new HttpManifestSource(
                         sp.GetRequiredService<IHttpClientFactory>(),
-                        options.ManifestUrl!));
+                        options.ManifestUrl!,
+                        allowInsecure: options.AllowInsecureManifestSource));
                     break;
 
                 case UpdateSourceKind.CustomType:
