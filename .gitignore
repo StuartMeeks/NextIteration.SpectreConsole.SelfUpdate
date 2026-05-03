@@ -437,8 +437,5 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
-# PackageOutputPath in csproj uses Windows path C:\nuget-local\ — on Linux/macOS
-# this resolves as a literal `C:/` directory under the project. CI overrides the
-# path; ignore the leak.
-**/C:/
+# Local NuGet pack output (csproj writes to artifacts/packages on Release builds).
 artifacts/
