@@ -11,11 +11,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
         public Func<ReleaseAsset, byte[]>? AssetBytes { get; set; }
         public int GetLatestCallCount { get; private set; }
         public string? LastChannelRequested { get; private set; }
+        public bool? LastIncludePrereleasesOverride { get; private set; }
 
-        public Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct)
+        public Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct) =>
+            GetLatestAsync(channel, includePrereleasesOverride: null, ct);
+
+        public Task<RemoteRelease?> GetLatestAsync(string? channel, bool? includePrereleasesOverride, CancellationToken ct)
         {
             GetLatestCallCount++;
             LastChannelRequested = channel;
+            LastIncludePrereleasesOverride = includePrereleasesOverride;
             var result = LatestSelector?.Invoke(channel) ?? LatestForChannel;
             return Task.FromResult(result);
         }

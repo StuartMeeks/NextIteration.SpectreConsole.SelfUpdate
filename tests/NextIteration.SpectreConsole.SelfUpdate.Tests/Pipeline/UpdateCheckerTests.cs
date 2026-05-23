@@ -117,6 +117,27 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         }
 
         [Fact]
+        public async Task CheckAsync_override_true_does_not_reuse_default_cache_entry()
+        {
+            using var dir = new TempDir();
+            var opts = new SelfUpdaterOptions { AppName = "myapp", CacheDirectory = dir.Path, SkipVersionPredicate = null };
+            var source = new FakeUpdateSource
+            {
+                LatestSelector = _ => TestRelease("v1.5.0"),
+            };
+            var checker = NewChecker(opts, source, "1.0.0");
+
+            // First call without override populates the default-prerelease cache.
+            await checker.CheckAsync();
+            Assert.Equal(1, source.GetLatestCallCount);
+
+            // Second call with override=true must not reuse the default cache.
+            await checker.CheckAsync(includePrereleasesOverride: true);
+            Assert.Equal(2, source.GetLatestCallCount);
+            Assert.True(source.LastIncludePrereleasesOverride);
+        }
+
+        [Fact]
         public async Task CheckAsync_returns_no_update_when_remote_is_same()
         {
             using var dir = new TempDir();

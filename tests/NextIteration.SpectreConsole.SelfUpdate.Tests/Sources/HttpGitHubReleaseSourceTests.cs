@@ -91,6 +91,31 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Sources
         }
 
         [Fact]
+        public async Task GetLatestAsync_with_override_true_hits_list_endpoint_when_constructor_says_false()
+        {
+            // Constructor was passed includePrereleases:false, but the
+            // per-invocation override should take over and force the source
+            // onto the listing endpoint that returns prereleases.
+            const string json = """
+            [
+              { "tag_name": "v2.0.0-rc.1", "draft": false, "prerelease": true,  "published_at": "2026-05-02T12:00:00Z", "assets": [] },
+              { "tag_name": "v1.4.2",      "draft": false, "prerelease": false, "published_at": "2026-04-30T12:00:00Z", "assets": [] }
+            ]
+            """;
+            HttpRequestMessage? captured = null;
+            var handler = new FakeHttpHandler
+            {
+                Responder = req => { captured = req; return FakeHttpHandler.Json(json); },
+            };
+            var source = NewSource(handler, includePrereleases: false);
+
+            var release = await source.GetLatestAsync(channel: null, includePrereleasesOverride: true, CancellationToken.None);
+
+            Assert.Equal("v2.0.0-rc.1", release?.Tag);
+            Assert.DoesNotContain("/latest", captured?.RequestUri?.AbsolutePath ?? string.Empty, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public async Task GetLatestAsync_when_request_fails_returns_null()
         {
             var handler = new FakeHttpHandler { Responder = _ => FakeHttpHandler.NotFound() };

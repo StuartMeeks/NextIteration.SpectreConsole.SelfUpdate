@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 
 using Spectre.Console;
@@ -16,8 +17,22 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
     ///   <item><description><c>2</c> — a newer release is available.</description></item>
     /// </list>
     /// </summary>
-    public sealed class UpdateCheckCommand : AsyncCommand
+    public sealed class UpdateCheckCommand : AsyncCommand<UpdateCheckCommand.Settings>
     {
+        /// <summary>Settings for <c>update check</c>.</summary>
+        public sealed class Settings : CommandSettings
+        {
+            /// <summary>
+            /// Opt into prerelease tags for this invocation only. Equivalent
+            /// to flipping <c>SelfUpdaterOptions.IncludePrereleases</c> to
+            /// <c>true</c> for the lifetime of this command without mutating
+            /// shared options.
+            /// </summary>
+            [CommandOption("--prerelease")]
+            [Description("Consider GitHub prereleases when looking for the latest version (off by default).")]
+            public bool Prerelease { get; init; }
+        }
+
         private readonly IUpdateChecker _checker;
         private readonly IAnsiConsole _console;
 
@@ -32,15 +47,18 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
         }
 
         /// <inheritdoc />
-        protected override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken)
+        protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(settings);
+
             var current = _checker.GetCurrentVersion() ?? "dev";
             _console.MarkupLineInterpolated(CultureInfo.InvariantCulture, $"Current version: [bold]{current}[/]");
 
+            bool? prereleaseOverride = settings.Prerelease ? true : null;
             UpdateInfo? info;
             try
             {
-                info = await _checker.CheckAsync(cancellationToken).ConfigureAwait(false);
+                info = await _checker.CheckAsync(prereleaseOverride, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

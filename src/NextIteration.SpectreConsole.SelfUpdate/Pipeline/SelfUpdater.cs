@@ -34,7 +34,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             _checker.CheckAsync(ct);
 
         public Task<RemoteRelease?> GetLatestReleaseAsync(CancellationToken ct = default) =>
-            _source.GetLatestAsync(_options.Channel, ct);
+            GetLatestReleaseAsync(includePrereleasesOverride: null, ct);
+
+        public Task<RemoteRelease?> GetLatestReleaseAsync(bool? includePrereleasesOverride, CancellationToken ct = default) =>
+            _source.GetLatestAsync(_options.Channel, includePrereleasesOverride, ct);
 
         public Task InstallAsync(
             RemoteRelease release,

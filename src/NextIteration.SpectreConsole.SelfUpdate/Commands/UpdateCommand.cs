@@ -42,6 +42,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
             [CommandOption("--strategy")]
             [Description("Conflict strategy when a release ships a preserved path: ask | keep | new.")]
             public string? Strategy { get; init; }
+
+            /// <summary>
+            /// Opt into prerelease tags for this invocation only. Equivalent
+            /// to flipping <c>SelfUpdaterOptions.IncludePrereleases</c> to
+            /// <c>true</c> for the lifetime of this command without mutating
+            /// shared options.
+            /// </summary>
+            [CommandOption("--prerelease")]
+            [Description("Consider GitHub prereleases when looking for the latest version (off by default).")]
+            public bool Prerelease { get; init; }
         }
 
         private enum ConflictStrategy { Ask, Keep, New }
@@ -80,10 +90,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
             // Fetch the release once and use it for both display and install,
             // so the user confirms exactly the release that gets installed
             // (no TOCTOU window between "what's latest?" and "install latest").
+            bool? prereleaseOverride = settings.Prerelease ? true : null;
             RemoteRelease? release;
             try
             {
-                release = await _selfUpdater.GetLatestReleaseAsync(cancellationToken).ConfigureAwait(false);
+                release = await _selfUpdater.GetLatestReleaseAsync(prereleaseOverride, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

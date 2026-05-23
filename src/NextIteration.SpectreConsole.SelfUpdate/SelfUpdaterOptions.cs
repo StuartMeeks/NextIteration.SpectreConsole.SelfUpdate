@@ -19,7 +19,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate
 
         /// <summary>
         /// Optional release channel filter, e.g. <c>"stable"</c>,
-        /// <c>"beta"</c>. Forwarded to <see cref="IUpdateSource.GetLatestAsync"/>;
+        /// <c>"beta"</c>. Forwarded to <see cref="IUpdateSource.GetLatestAsync(string?, CancellationToken)"/>;
         /// the source decides what the value means.
         /// <see langword="null"/> uses the source's default channel.
         /// </summary>

@@ -13,10 +13,42 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
 {
     public sealed class UpdateCheckCommandTests
     {
+        private delegate Task<int> Runner(params string[] args);
+
+        [Fact]
+        public async Task Execute_with_prerelease_flag_passes_true_override_to_checker()
+        {
+            var (run, _, checker) = BuildHarness(c =>
+            {
+                c.CurrentVersion = "1.0.0";
+                c.CheckImpl = _ => Task.FromResult<UpdateInfo?>(
+                    new UpdateInfo("1.0.0", "v1.4.2", IsUpdateAvailable: false, ReleaseUrl: null));
+            });
+
+            await run("--prerelease");
+
+            Assert.True(checker.LastIncludePrereleasesOverride);
+        }
+
+        [Fact]
+        public async Task Execute_without_prerelease_flag_passes_null_override_to_checker()
+        {
+            var (run, _, checker) = BuildHarness(c =>
+            {
+                c.CurrentVersion = "1.0.0";
+                c.CheckImpl = _ => Task.FromResult<UpdateInfo?>(
+                    new UpdateInfo("1.0.0", "v1.4.2", IsUpdateAvailable: false, ReleaseUrl: null));
+            });
+
+            await run();
+
+            Assert.Null(checker.LastIncludePrereleasesOverride);
+        }
+
         [Fact]
         public async Task Execute_when_up_to_date_returns_zero()
         {
-            var (run, console) = BuildHarness(checker =>
+            var (run, console, _) = BuildHarness(checker =>
             {
                 checker.CurrentVersion = "1.4.2";
                 checker.CheckImpl = _ => Task.FromResult<UpdateInfo?>(
@@ -32,7 +64,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
         [Fact]
         public async Task Execute_when_update_available_returns_two()
         {
-            var (run, console) = BuildHarness(checker =>
+            var (run, console, _) = BuildHarness(checker =>
             {
                 checker.CurrentVersion = "1.0.0";
                 checker.CheckImpl = _ => Task.FromResult<UpdateInfo?>(
@@ -51,7 +83,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
         [Fact]
         public async Task Execute_when_check_returns_null_returns_one()
         {
-            var (run, console) = BuildHarness(checker =>
+            var (run, console, _) = BuildHarness(checker =>
                 checker.CheckImpl = _ => Task.FromResult<UpdateInfo?>(null));
 
             var exit = await run();
@@ -63,7 +95,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
         [Fact]
         public async Task Execute_when_check_throws_returns_one()
         {
-            var (run, console) = BuildHarness(checker =>
+            var (run, console, _) = BuildHarness(checker =>
                 checker.CheckImpl = _ => throw new InvalidOperationException("offline"));
 
             var exit = await run();
@@ -76,7 +108,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
         [Fact]
         public async Task Execute_when_no_release_url_omits_release_notes_line()
         {
-            var (run, console) = BuildHarness(checker =>
+            var (run, console, _) = BuildHarness(checker =>
             {
                 checker.CurrentVersion = "1.0.0";
                 checker.CheckImpl = _ => Task.FromResult<UpdateInfo?>(
@@ -91,7 +123,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
 
         // ---------- helpers ----------
 
-        private static (Func<Task<int>> Run, TestConsole Console) BuildHarness(Action<StubUpdateChecker> configChecker)
+        private static (Runner Run, TestConsole Console, StubUpdateChecker Checker) BuildHarness(Action<StubUpdateChecker> configChecker)
         {
             var checker = new StubUpdateChecker();
             configChecker(checker);
@@ -107,8 +139,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
             var app = new CommandApp<UpdateCheckCommand>(registrar);
             app.Configure(c => c.PropagateExceptions());
 
-            Task<int> Run() => app.RunAsync(Array.Empty<string>());
-            return (Run, console);
+            Runner run = args => app.RunAsync(args);
+            return (run, console, checker);
         }
     }
 }

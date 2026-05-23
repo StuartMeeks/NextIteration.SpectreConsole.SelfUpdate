@@ -197,6 +197,39 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
         }
 
         [Fact]
+        public async Task Execute_with_prerelease_flag_passes_true_override_to_updater()
+        {
+            var (run, _, updater) = BuildHarness(
+                configChecker: c => c.CurrentVersion = "1.0.0",
+                configUpdater: u =>
+                {
+                    u.GetLatestImpl = _ => Task.FromResult<RemoteRelease?>(ReleaseV142);
+                    u.InstallReleaseImpl = (_, _, _, _) => Task.CompletedTask;
+                });
+
+            var exit = await run("--yes", "--prerelease");
+
+            Assert.Equal(0, exit);
+            Assert.True(updater.LastIncludePrereleasesOverride);
+        }
+
+        [Fact]
+        public async Task Execute_without_prerelease_flag_passes_null_override_to_updater()
+        {
+            var (run, _, updater) = BuildHarness(
+                configChecker: c => c.CurrentVersion = "1.0.0",
+                configUpdater: u =>
+                {
+                    u.GetLatestImpl = _ => Task.FromResult<RemoteRelease?>(ReleaseV142);
+                    u.InstallReleaseImpl = (_, _, _, _) => Task.CompletedTask;
+                });
+
+            await run("--yes");
+
+            Assert.Null(updater.LastIncludePrereleasesOverride);
+        }
+
+        [Fact]
         public async Task Execute_prints_current_and_latest_versions()
         {
             var (run, console, _) = BuildHarness(

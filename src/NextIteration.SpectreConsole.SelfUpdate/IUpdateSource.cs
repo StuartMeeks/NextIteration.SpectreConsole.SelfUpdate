@@ -29,6 +29,27 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct);
 
         /// <summary>
+        /// Per-invocation variant of <see cref="GetLatestAsync(string?, CancellationToken)"/>
+        /// that lets the caller override
+        /// <see cref="SelfUpdaterOptions.IncludePrereleases"/> without
+        /// mutating shared options. Used by the <c>update --prerelease</c>
+        /// and <c>update check --prerelease</c> CLI flags.
+        /// </summary>
+        /// <param name="channel">Channel filter — see the base overload.</param>
+        /// <param name="includePrereleasesOverride">
+        /// <see langword="null"/> defers to the source's captured
+        /// <see cref="SelfUpdaterOptions.IncludePrereleases"/>; <see langword="true"/>
+        /// forces prerelease inclusion for this call; <see langword="false"/>
+        /// forces exclusion. The default interface implementation drops the
+        /// override and delegates to the base overload so existing third-party
+        /// sources continue to compile — implementers wanting to honour the
+        /// CLI flag should override this method explicitly.
+        /// </param>
+        /// <param name="ct">Cancellation token.</param>
+        Task<RemoteRelease?> GetLatestAsync(string? channel, bool? includePrereleasesOverride, CancellationToken ct) =>
+            GetLatestAsync(channel, ct);
+
+        /// <summary>
         /// Stream a single release asset to <paramref name="destination"/>.
         /// Should write nothing on failure and propagate the underlying
         /// exception to the caller (the installer surfaces it as an

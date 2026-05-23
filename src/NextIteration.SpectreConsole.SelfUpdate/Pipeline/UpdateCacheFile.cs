@@ -51,5 +51,6 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         [property: JsonPropertyName("checkedAt")] DateTimeOffset CheckedAt,
         [property: JsonPropertyName("latestTag")] string LatestTag,
         [property: JsonPropertyName("releaseUrl")] string? ReleaseUrl,
-        [property: JsonPropertyName("channel")] string? Channel);
+        [property: JsonPropertyName("channel")] string? Channel,
+        [property: JsonPropertyName("includePrereleases")] bool? IncludePrereleases = null);
 }
