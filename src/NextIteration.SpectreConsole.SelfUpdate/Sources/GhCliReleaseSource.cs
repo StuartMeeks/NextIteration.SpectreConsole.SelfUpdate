@@ -27,7 +27,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
     /// --pattern &lt;name&gt; --output &lt;tempfile&gt;</c> followed by streaming
     /// the temp file into the caller's destination. The tag is recovered
     /// from <see cref="ReleaseAsset.Metadata"/> (key <c>"tag"</c>) which
-    /// the source populates during <see cref="GetLatestAsync"/>. Arguments
+    /// the source populates during <see cref="GetLatestAsync(string?, CancellationToken)"/>. Arguments
     /// are passed via <see cref="System.Diagnostics.ProcessStartInfo.ArgumentList"/>
     /// so values from a remote source never need to be quoted or escaped.
     /// </para>
@@ -74,11 +74,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
         }
 
         /// <inheritdoc />
-        public async Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct)
+        public Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct) =>
+            GetLatestAsync(channel, includePrereleasesOverride: null, ct);
+
+        /// <inheritdoc />
+        public async Task<RemoteRelease?> GetLatestAsync(string? channel, bool? includePrereleasesOverride, CancellationToken ct)
         {
+            var includePrereleases = includePrereleasesOverride ?? _includePrereleases;
             try
             {
-                if (channel is null && !_includePrereleases)
+                if (channel is null && !includePrereleases)
                 {
                     var stdout = await _runner(
                         new[]
@@ -106,7 +111,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
                 var releases = JsonSerializer.Deserialize<GhReleaseDto[]>(listJson, JsonOpts) ?? Array.Empty<GhReleaseDto>();
                 var match = releases
                     .Where(r => !r.IsDraft)
-                    .Where(r => _includePrereleases || !r.IsPrerelease)
+                    .Where(r => includePrereleases || !r.IsPrerelease)
                     .Where(r => channel is null
                         || (r.TagName ?? string.Empty).Contains($"-{channel}", StringComparison.OrdinalIgnoreCase))
                     .OrderByDescending(r => r.PublishedAt)

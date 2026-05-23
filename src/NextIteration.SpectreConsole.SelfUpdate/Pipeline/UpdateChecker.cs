@@ -45,7 +45,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             _utcNow = utcNow;
         }
 
-        public async Task<UpdateInfo?> CheckAsync(CancellationToken ct = default)
+        public Task<UpdateInfo?> CheckAsync(CancellationToken ct = default) =>
+            CheckAsync(includePrereleasesOverride: null, ct);
+
+        public async Task<UpdateInfo?> CheckAsync(bool? includePrereleasesOverride, CancellationToken ct = default)
         {
             if (IsOptOutSet()) return null;
 
@@ -53,9 +56,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             if (current is null) return null;
             if (IsVersionSkipped(current)) return null;
 
+            var effectivePrerelease = includePrereleasesOverride ?? _options.IncludePrereleases;
             var cachePath = ResolveCacheFilePath();
             var cached = UpdateCacheFile.TryRead(cachePath);
-            if (IsCacheFresh(cached))
+            if (IsCacheFresh(cached, effectivePrerelease))
             {
                 return Compare(current, cached!.LatestTag, ParseUri(cached.ReleaseUrl));
             }
@@ -65,14 +69,15 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 linked.CancelAfter(_options.CheckTimeout);
 
-                var release = await _source.GetLatestAsync(_options.Channel, linked.Token).ConfigureAwait(false);
+                var release = await _source.GetLatestAsync(_options.Channel, includePrereleasesOverride, linked.Token).ConfigureAwait(false);
                 if (release is null) return null;
 
                 UpdateCacheFile.TryWrite(cachePath, new UpdateCacheEntry(
                     CheckedAt: _utcNow(),
                     LatestTag: release.Tag,
                     ReleaseUrl: release.ReleaseNotesUrl?.ToString(),
-                    Channel: _options.Channel));
+                    Channel: _options.Channel,
+                    IncludePrereleases: effectivePrerelease));
 
                 return Compare(current, release.Tag, release.ReleaseNotesUrl);
             }
@@ -122,10 +127,17 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             return Path.Combine(dir, ".update-check.json");
         }
 
-        internal bool IsCacheFresh(UpdateCacheEntry? entry)
+        internal bool IsCacheFresh(UpdateCacheEntry? entry) =>
+            IsCacheFresh(entry, _options.IncludePrereleases);
+
+        internal bool IsCacheFresh(UpdateCacheEntry? entry, bool effectivePrerelease)
         {
             if (entry is null) return false;
             if (!string.Equals(entry.Channel, _options.Channel, StringComparison.Ordinal)) return false;
+            // Pre-0.1.4 cache entries have no IncludePrereleases field — they
+            // were written before the override existed, so they always
+            // reflect a non-prerelease answer.
+            if ((entry.IncludePrereleases ?? false) != effectivePrerelease) return false;
             return (_utcNow() - entry.CheckedAt) < _options.CacheTtl;
         }
 

@@ -83,14 +83,19 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
         }
 
         /// <inheritdoc />
-        public async Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct)
+        public Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct) =>
+            GetLatestAsync(channel, includePrereleasesOverride: null, ct);
+
+        /// <inheritdoc />
+        public async Task<RemoteRelease?> GetLatestAsync(string? channel, bool? includePrereleasesOverride, CancellationToken ct)
         {
+            var includePrereleases = includePrereleasesOverride ?? _includePrereleases;
             try
             {
                 using var http = _httpClientFactory.CreateClient();
                 ConfigureRequestHeaders(http);
 
-                if (channel is null && !_includePrereleases)
+                if (channel is null && !includePrereleases)
                 {
                     var dto = await GetJsonAsync<GitHubReleaseDto>(http, $"repos/{_repository}/releases/latest", ct).ConfigureAwait(false);
                     return dto is null ? null : Convert(dto, channel);
@@ -101,7 +106,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
 
                 var match = releases
                     .Where(r => !r.Draft)
-                    .Where(r => _includePrereleases || !r.Prerelease)
+                    .Where(r => includePrereleases || !r.Prerelease)
                     .Where(r => channel is null
                         || (r.TagName ?? string.Empty).Contains($"-{channel}", StringComparison.OrdinalIgnoreCase))
                     .OrderByDescending(r => r.PublishedAt)

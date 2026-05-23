@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.4] — 2026-05-23
+
+### Added
+
+- **`update --prerelease` and `update check --prerelease`.** Opt into prerelease tags for a single command invocation without touching the DI-registered `SelfUpdaterOptions.IncludePrereleases` default. Useful for downstream apps testing RC builds. Help text: `Consider GitHub prereleases when looking for the latest version (off by default).`
+- **`bool? includePrereleasesOverride` parameter** on `IUpdateSource.GetLatestAsync`, `IUpdateChecker.CheckAsync`, and `ISelfUpdater.GetLatestReleaseAsync`, added as default interface methods that delegate to the existing overload. External `IUpdateSource` implementers continue to compile unchanged; they only need to override the new overload if they want to honour `--prerelease`. `null` defers to the source's captured default; `true`/`false` force inclusion or exclusion.
+
+### Changed
+
+- The update-check cache now keys on `(channel, includePrereleases)` so a `--prerelease` answer doesn't pollute the next default `update check`, and vice versa. Cache files written by v0.1.3 are read as non-prerelease (matches their actual provenance — prereleases were always opt-in at DI registration). No migration needed; the new field is nullable.
+
+---
+
 ## [0.1.3] — 2026-05-03
 
 ### Added
@@ -72,6 +85,7 @@ Initial commit. Never published to nuget.org — superseded by 0.1.1 before the 
 - Full XML documentation on the public surface, `TreatWarningsAsErrors=true`, `AnalysisLevel=latest`.
 - SourceLink, deterministic builds, published symbol packages.
 
+[0.1.4]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.4
 [0.1.3]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.3
 [0.1.2]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.2
 [0.1.1]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.1

@@ -19,6 +19,20 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         Task<UpdateInfo?> CheckAsync(CancellationToken ct = default);
 
         /// <summary>
+        /// Per-invocation variant of <see cref="CheckAsync(CancellationToken)"/>
+        /// that lets the caller override
+        /// <see cref="SelfUpdaterOptions.IncludePrereleases"/> for one call
+        /// (used by the <c>update check --prerelease</c> CLI flag).
+        /// <see langword="null"/> defers to the configured option;
+        /// <see langword="true"/>/<see langword="false"/> force inclusion or
+        /// exclusion. The default-interface implementation drops the override
+        /// and delegates to the base overload so existing custom checkers
+        /// continue to compile.
+        /// </summary>
+        Task<UpdateInfo?> CheckAsync(bool? includePrereleasesOverride, CancellationToken ct = default) =>
+            CheckAsync(ct);
+
+        /// <summary>
         /// The running CLI's version, read from
         /// <see cref="System.Reflection.AssemblyInformationalVersionAttribute"/>
         /// on the entry assembly with any <c>+sha</c> build metadata
@@ -27,7 +41,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// <see cref="SelfUpdaterOptions.SkipVersionPredicate"/> is
         /// <b>not</b> consulted here — predicate-skipped versions are still
         /// reported so commands can display them; the predicate suppresses
-        /// the <i>check</i> inside <see cref="CheckAsync"/>, not the
+        /// the <i>check</i> inside <see cref="CheckAsync(CancellationToken)"/>, not the
         /// displayed version.
         /// </summary>
         string? GetCurrentVersion();

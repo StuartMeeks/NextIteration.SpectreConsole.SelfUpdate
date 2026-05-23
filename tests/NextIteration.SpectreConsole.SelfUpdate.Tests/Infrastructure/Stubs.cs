@@ -7,12 +7,19 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
         public Func<CancellationToken, Task<RemoteRelease?>>? GetLatestImpl { get; set; }
         public Func<IProgress<UpdateProgressEvent>?, CancellationToken, Task>? InstallImpl { get; set; }
         public Func<RemoteRelease, IProgress<UpdateProgressEvent>?, Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>?, CancellationToken, Task>? InstallReleaseImpl { get; set; }
+        public bool? LastIncludePrereleasesOverride { get; private set; }
 
         public Task<UpdateInfo?> CheckAsync(CancellationToken ct = default) =>
             CheckImpl?.Invoke(ct) ?? Task.FromResult<UpdateInfo?>(null);
 
         public Task<RemoteRelease?> GetLatestReleaseAsync(CancellationToken ct = default) =>
-            GetLatestImpl?.Invoke(ct) ?? Task.FromResult<RemoteRelease?>(null);
+            GetLatestReleaseAsync(includePrereleasesOverride: null, ct);
+
+        public Task<RemoteRelease?> GetLatestReleaseAsync(bool? includePrereleasesOverride, CancellationToken ct = default)
+        {
+            LastIncludePrereleasesOverride = includePrereleasesOverride;
+            return GetLatestImpl?.Invoke(ct) ?? Task.FromResult<RemoteRelease?>(null);
+        }
 
         public Task InstallAsync(
             RemoteRelease release,
@@ -30,9 +37,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
     {
         public string? CurrentVersion { get; set; } = "1.0.0";
         public Func<CancellationToken, Task<UpdateInfo?>>? CheckImpl { get; set; }
+        public bool? LastIncludePrereleasesOverride { get; private set; }
 
         public Task<UpdateInfo?> CheckAsync(CancellationToken ct = default) =>
-            CheckImpl?.Invoke(ct) ?? Task.FromResult<UpdateInfo?>(null);
+            CheckAsync(includePrereleasesOverride: null, ct);
+
+        public Task<UpdateInfo?> CheckAsync(bool? includePrereleasesOverride, CancellationToken ct = default)
+        {
+            LastIncludePrereleasesOverride = includePrereleasesOverride;
+            return CheckImpl?.Invoke(ct) ?? Task.FromResult<UpdateInfo?>(null);
+        }
 
         public string? GetCurrentVersion() => CurrentVersion;
     }

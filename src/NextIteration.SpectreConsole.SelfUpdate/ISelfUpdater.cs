@@ -10,7 +10,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate
     public interface ISelfUpdater
     {
         /// <summary>
-        /// Non-blocking probe — see <see cref="IUpdateChecker.CheckAsync"/>.
+        /// Non-blocking probe — see <see cref="IUpdateChecker.CheckAsync(CancellationToken)"/>.
         /// </summary>
         Task<UpdateInfo?> CheckAsync(CancellationToken ct = default);
 
@@ -25,6 +25,20 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// TOCTOU window between display and install).
         /// </summary>
         Task<RemoteRelease?> GetLatestReleaseAsync(CancellationToken ct = default);
+
+        /// <summary>
+        /// Per-invocation variant of
+        /// <see cref="GetLatestReleaseAsync(CancellationToken)"/> that lets the
+        /// caller override <see cref="SelfUpdaterOptions.IncludePrereleases"/>
+        /// for one call (used by the <c>update --prerelease</c> CLI flag).
+        /// <see langword="null"/> defers to the configured option;
+        /// <see langword="true"/>/<see langword="false"/> force inclusion or
+        /// exclusion. The default-interface implementation drops the override
+        /// and delegates to the base overload so existing custom updaters
+        /// continue to compile.
+        /// </summary>
+        Task<RemoteRelease?> GetLatestReleaseAsync(bool? includePrereleasesOverride, CancellationToken ct = default) =>
+            GetLatestReleaseAsync(ct);
 
         /// <summary>
         /// Install the supplied release: download, run the verifier
@@ -54,8 +68,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// <see cref="UpdateException"/> when no release is available or
         /// when any pipeline stage fails. <b>Has a TOCTOU window</b>: the
         /// release returned by the source here may differ from the one a
-        /// prior <see cref="CheckAsync"/> reported. For interactive UIs,
-        /// prefer the <see cref="GetLatestReleaseAsync"/> +
+        /// prior <see cref="CheckAsync(CancellationToken)"/> reported. For interactive UIs,
+        /// prefer the <see cref="GetLatestReleaseAsync(CancellationToken)"/> +
         /// <see cref="InstallAsync(RemoteRelease, IProgress{UpdateProgressEvent}, Func{UpdateConflict, CancellationToken, Task{UpdateConflictResolution}}, CancellationToken)"/>
         /// pair so the user confirms exactly the release that gets
         /// installed.
