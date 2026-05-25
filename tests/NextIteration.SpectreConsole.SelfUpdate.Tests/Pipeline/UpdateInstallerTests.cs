@@ -552,6 +552,122 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 PublishedAt: DateTimeOffset.UtcNow);
         }
 
+        [Fact]
+        public void DeleteDirectoryRobustly_when_path_missing_is_noop()
+        {
+            using var work = new TempDir();
+            var missing = Path.Combine(work.Path, "does-not-exist");
+
+            var deleterCalls = 0;
+            var sleeperCalls = 0;
+            UpdateInstaller.DeleteDirectoryRobustly(
+                missing,
+                deleter: (_, _) => deleterCalls++,
+                sleeper: _ => sleeperCalls++);
+
+            Assert.Equal(0, deleterCalls);
+            Assert.Equal(0, sleeperCalls);
+        }
+
+        [Fact]
+        public void DeleteDirectoryRobustly_succeeds_first_try_calls_deleter_once_no_sleeps()
+        {
+            using var work = new TempDir();
+            var dir = Path.Combine(work.Path, "tree");
+            Directory.CreateDirectory(dir);
+
+            var deleterCalls = 0;
+            var sleeps = new List<TimeSpan>();
+            UpdateInstaller.DeleteDirectoryRobustly(
+                dir,
+                deleter: (path, recursive) =>
+                {
+                    deleterCalls++;
+                    Directory.Delete(path, recursive);
+                },
+                sleeper: sleeps.Add);
+
+            Assert.Equal(1, deleterCalls);
+            Assert.Empty(sleeps);
+            Assert.False(Directory.Exists(dir));
+        }
+
+        [Fact]
+        public void DeleteDirectoryRobustly_retries_with_backoff_on_transient_io_failure()
+        {
+            // Simulates OneDrive / antivirus / Windows Search holding a
+            // sharing-violation handle that releases within a few hundred ms.
+            using var work = new TempDir();
+            var dir = Path.Combine(work.Path, "tree");
+            Directory.CreateDirectory(dir);
+
+            var deleterCalls = 0;
+            var sleeps = new List<TimeSpan>();
+            UpdateInstaller.DeleteDirectoryRobustly(
+                dir,
+                deleter: (path, recursive) =>
+                {
+                    deleterCalls++;
+                    if (deleterCalls < 3)
+                    {
+                        throw new IOException("The process cannot access the file because it is being used by another process.");
+                    }
+                    Directory.Delete(path, recursive);
+                },
+                sleeper: sleeps.Add);
+
+            Assert.Equal(3, deleterCalls);
+            Assert.Equal(new[] { TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(400) }, sleeps);
+            Assert.False(Directory.Exists(dir));
+        }
+
+        [Fact]
+        public void DeleteDirectoryRobustly_throws_after_exhausting_retries()
+        {
+            using var work = new TempDir();
+            var dir = Path.Combine(work.Path, "tree");
+            Directory.CreateDirectory(dir);
+
+            var deleterCalls = 0;
+            var sleeps = new List<TimeSpan>();
+            var ex = Assert.Throws<IOException>(() =>
+                UpdateInstaller.DeleteDirectoryRobustly(
+                    dir,
+                    deleter: (_, _) =>
+                    {
+                        deleterCalls++;
+                        throw new IOException("stubborn handle");
+                    },
+                    sleeper: sleeps.Add));
+
+            Assert.Equal("stubborn handle", ex.Message);
+            // 1 initial attempt + 3 retries = 4 deleter calls, 3 sleeps.
+            Assert.Equal(4, deleterCalls);
+            Assert.Equal(
+                new[] { TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(400), TimeSpan.FromMilliseconds(800) },
+                sleeps);
+        }
+
+        [Fact]
+        public void DeleteDirectoryRobustly_clears_readonly_attribute_on_descendant_files()
+        {
+            // The real .NET Directory.Delete throws UnauthorizedAccessException
+            // on a file marked ReadOnly. The helper has to clear that before
+            // delegating, otherwise extracted-archive content (which often
+            // arrives ReadOnly on Windows) breaks the recursive delete.
+            using var work = new TempDir();
+            var dir = Path.Combine(work.Path, "tree");
+            Directory.CreateDirectory(dir);
+            var readOnlyFile = Path.Combine(dir, "readonly.txt");
+            File.WriteAllText(readOnlyFile, "ro");
+            File.SetAttributes(readOnlyFile, File.GetAttributes(readOnlyFile) | FileAttributes.ReadOnly);
+
+            // Use the real Directory.Delete to verify the attribute was actually cleared.
+            UpdateInstaller.DeleteDirectoryRobustly(dir);
+
+            Assert.False(Directory.Exists(dir));
+        }
+
         private static byte[] CreateZipBytes((string TopFolder, (string Name, string Content)[] Files) layout)
         {
             using var ms = new MemoryStream();

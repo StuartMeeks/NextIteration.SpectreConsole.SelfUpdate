@@ -130,15 +130,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         {
             try
             {
-                var oldDir = Path.Combine(InstallDirectory, OldDirName);
-                if (Directory.Exists(oldDir))
-                {
-                    Directory.Delete(oldDir, recursive: true);
-                }
+                DeleteDirectoryRobustly(Path.Combine(InstallDirectory, OldDirName));
             }
             catch
             {
-                // Non-fatal — will retry on next startup.
+                // Non-fatal — will retry on next startup. Stragglers in
+                // .old/ are typically the result of OneDrive / antivirus
+                // / Windows Search holding transient handles on files
+                // the swap moved in seconds earlier; the helper's retry
+                // budget covers the common case but a stubborn handle
+                // can still defeat it.
             }
         }
 
@@ -188,11 +189,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>? onConflict,
             CancellationToken ct)
         {
-            // Reset .old/ — it should be empty going in.
-            if (Directory.Exists(oldDirectory))
-            {
-                Directory.Delete(oldDirectory, recursive: true);
-            }
+            // Reset .old/ — it should be empty going in. Stragglers from a
+            // previous install's CleanupOldInstall (e.g. OneDrive held a
+            // sync handle) get cleared here with the same retry budget.
+            DeleteDirectoryRobustly(oldDirectory);
             Directory.CreateDirectory(oldDirectory);
 
             // Phase 1: move install/ contents (except maintenance and
@@ -375,11 +375,79 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             try
             {
                 if (File.Exists(path)) File.Delete(path);
-                else if (Directory.Exists(path)) Directory.Delete(path, recursive: true);
+                else if (Directory.Exists(path)) DeleteDirectoryRobustly(path);
             }
             catch
             {
                 // Best effort.
+            }
+        }
+
+        /// <summary>
+        /// Recursive <see cref="Directory.Delete(string, bool)"/> with two
+        /// Windows-aware adjustments: (1) clears the <c>ReadOnly</c>
+        /// attribute on every descendant file up front so the delete doesn't
+        /// bail with <see cref="UnauthorizedAccessException"/> on
+        /// archive-extracted or VCS-checked-out content, and (2) retries on
+        /// <see cref="IOException"/> / <see cref="UnauthorizedAccessException"/>
+        /// at 200/400/800 ms — covers transient sharing-violations from
+        /// OneDrive, Windows Search, antivirus, etc. that hold short-lived
+        /// handles on files that were just moved into the directory.
+        /// </summary>
+        /// <param name="path">Directory to delete. No-op if missing.</param>
+        /// <param name="deleter">Test seam — production passes <see langword="null"/> to use the real <see cref="Directory.Delete(string, bool)"/>.</param>
+        /// <param name="sleeper">Test seam — production passes <see langword="null"/> to use <see cref="Thread.Sleep(TimeSpan)"/>.</param>
+        internal static void DeleteDirectoryRobustly(
+            string path,
+            Action<string, bool>? deleter = null,
+            Action<TimeSpan>? sleeper = null)
+        {
+            if (!Directory.Exists(path)) return;
+
+            deleter ??= Directory.Delete;
+            sleeper ??= Thread.Sleep;
+
+            ReadOnlySpan<TimeSpan> backoffs =
+            [
+                TimeSpan.FromMilliseconds(200),
+                TimeSpan.FromMilliseconds(400),
+                TimeSpan.FromMilliseconds(800),
+            ];
+
+            for (var attempt = 0; attempt <= backoffs.Length; attempt++)
+            {
+                ClearReadOnlyAttributes(path);
+                try
+                {
+                    deleter(path, true);
+                    return;
+                }
+                catch (Exception ex) when (attempt < backoffs.Length
+                    && (ex is IOException || ex is UnauthorizedAccessException))
+                {
+                    sleeper(backoffs[attempt]);
+                }
+            }
+        }
+
+        private static void ClearReadOnlyAttributes(string path)
+        {
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+                {
+                    var attrs = File.GetAttributes(file);
+                    if ((attrs & FileAttributes.ReadOnly) != 0)
+                    {
+                        File.SetAttributes(file, attrs & ~FileAttributes.ReadOnly);
+                    }
+                }
+            }
+            catch
+            {
+                // Best effort — if we can't clear an attribute (e.g. the file
+                // is locked), the subsequent Delete will surface the real
+                // failure and the retry loop will get another shot.
             }
         }
 
@@ -450,7 +518,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         {
             try
             {
-                if (Directory.Exists(stagingDir)) Directory.Delete(stagingDir, recursive: true);
+                DeleteDirectoryRobustly(stagingDir);
             }
             catch (Exception ex)
             {
@@ -464,7 +532,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         {
             try
             {
-                if (Directory.Exists(path)) Directory.Delete(path, recursive: true);
+                DeleteDirectoryRobustly(path);
             }
             catch
             {
