@@ -84,6 +84,33 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Sources
         }
 
         [Fact]
+        public async Task GetLatestAsync_list_call_does_not_request_view_only_json_fields()
+        {
+            // Regression: `gh release list --json` rejects `url` (and other
+            // fields that exist only on `release view`). Asking for them
+            // returns a non-zero exit code that the source's catch-all
+            // surfaces as "no result". Keep the list `--json` value restricted
+            // to fields supported by `release list`.
+            var runner = new RecordingRunner { NextStdout = "[]" };
+            var source = new GhCliReleaseSource(Repo, includePrereleases: true, runner.RunAsync);
+
+            await source.GetLatestAsync(channel: null, includePrereleasesOverride: null, CancellationToken.None);
+
+            var listInvocation = runner.Invocations.Single();
+            Assert.Equal("list", listInvocation[1]);
+
+            var jsonIdx = -1;
+            for (var i = 0; i < listInvocation.Count; i++)
+            {
+                if (listInvocation[i] == "--json") { jsonIdx = i; break; }
+            }
+            Assert.True(jsonIdx >= 0 && jsonIdx + 1 < listInvocation.Count);
+            var fields = listInvocation[jsonIdx + 1].Split(',');
+            Assert.DoesNotContain("url", fields);
+            Assert.DoesNotContain("assets", fields);
+        }
+
+        [Fact]
         public async Task GetLatestAsync_when_channel_does_not_match_returns_null()
         {
             var listJson = """

@@ -98,11 +98,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
                     return dto is null ? null : Convert(dto, channel);
                 }
 
+                // `gh release list --json` exposes a narrower field set than
+                // `gh release view --json` — notably `url` is view-only and
+                // asking for it on list exits the gh process with a non-zero
+                // status. Only request fields used for filtering / sort here;
+                // the full detail (incl. url, assets) is fetched per-tag below.
                 var listJson = await _runner(
                     new[]
                     {
                         "release", "list",
-                        "--json", "tagName,name,url,publishedAt,isDraft,isPrerelease",
+                        "--json", "tagName,publishedAt,isDraft,isPrerelease",
                         "--limit", "30",
                         "--repo", _repository,
                     },
