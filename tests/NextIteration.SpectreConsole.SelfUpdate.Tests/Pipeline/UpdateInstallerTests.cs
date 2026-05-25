@@ -121,6 +121,43 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         }
 
         [Fact]
+        public void CleanupOldInstall_when_update_staging_exists_deletes_it()
+        {
+            // Regression for v0.1.7: the immediate post-install cleanup of
+            // .update/ races OneDrive's sync handles on the freshly-extracted
+            // tree. The startup pass is the canonical retry path; without
+            // this CleanupOldInstall would only touch .old/ and .update/
+            // would accumulate across sessions.
+            using var work = new TempDir();
+            var installDir = Path.Combine(work.Path, "install");
+            var staging = Path.Combine(installDir, ".update", "v1.4.2");
+            Directory.CreateDirectory(staging);
+            File.WriteAllText(Path.Combine(staging, "leftover.txt"), "stale");
+
+            var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-x64");
+            installer.CleanupOldInstall();
+
+            Assert.False(Directory.Exists(Path.Combine(installDir, ".update")));
+        }
+
+        [Fact]
+        public void CleanupOldInstall_cleans_both_old_and_update_directories()
+        {
+            using var work = new TempDir();
+            var installDir = Path.Combine(work.Path, "install");
+            Directory.CreateDirectory(Path.Combine(installDir, ".old"));
+            File.WriteAllText(Path.Combine(installDir, ".old", "garbage.txt"), "stale");
+            Directory.CreateDirectory(Path.Combine(installDir, ".update", "v1.4.2"));
+            File.WriteAllText(Path.Combine(installDir, ".update", "v1.4.2", "archive.zip"), "stale");
+
+            var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-x64");
+            installer.CleanupOldInstall();
+
+            Assert.False(Directory.Exists(Path.Combine(installDir, ".old")));
+            Assert.False(Directory.Exists(Path.Combine(installDir, ".update")));
+        }
+
+        [Fact]
         public void CleanupOldInstall_when_old_directory_missing_is_noop()
         {
             using var work = new TempDir();
