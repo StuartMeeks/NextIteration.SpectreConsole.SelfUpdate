@@ -3,8 +3,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate
     /// <summary>
     /// Downloads a release, runs the verifier pipeline, extracts the archive,
     /// and atomically swaps the new files into the install directory. The
-    /// previous install is moved to a sibling <c>.old/</c> directory and
-    /// deleted on the next startup via <see cref="CleanupOldInstall"/>.
+    /// previous install is moved to a sibling <c>.old/</c> directory; both it
+    /// and the <c>.update/</c> staging tree are deleted on the next startup
+    /// via <see cref="CleanupOldInstall"/>.
     /// </summary>
     public interface IUpdateInstaller
     {
@@ -40,9 +41,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate
 
         /// <summary>
         /// Idempotent. Call this once at the very start of the CLI's
-        /// <c>Main</c> to delete any <c>.old/</c> directory left behind by a
-        /// previous successful update — the running new binary is sufficient
-        /// proof the swap completed. Safe to call when no <c>.old/</c>
+        /// <c>Main</c> to delete any <c>.old/</c> or <c>.update/</c>
+        /// directories left behind by a previous successful update — the
+        /// running new binary is sufficient proof both the swap and the
+        /// extraction completed. The startup pass is the canonical
+        /// retry path for OneDrive / antivirus contention that defeated
+        /// cleanup at install time. Safe to call when neither directory
         /// exists; failures are swallowed (will retry next startup).
         /// </summary>
         void CleanupOldInstall();

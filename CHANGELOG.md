@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.7] — 2026-05-25
+
+### Fixed
+
+- **`.update/` staging tree persists across sessions on OneDrive-synced installs.** v0.1.6 wired the recursive-delete-with-retry helper into `InstallAsync`'s end-of-install cleanup, but that pass runs immediately after extraction — the worst possible moment for OneDrive contention, since OneDrive is actively scanning a tree that just appeared. The 1.4 s retry budget loses the race often enough that `.update/<tag>/` accumulates. `CleanupOldInstall` (called at startup) previously only touched `.old/`, so nothing ever retried `.update/` after OneDrive had time to release.
+- Fix: `CleanupOldInstall` now cleans both `.old/` and `.update/`. The startup pass is the canonical retry path — by the time the user next launches the CLI, OneDrive has had hours or days to release the handles that defeated the install-time cleanup. Same `DeleteDirectoryRobustly` helper, same swallow-on-final-failure semantics, just a second path. The immediate cleanup in `InstallAsync`'s finally stays as a fast-path for installs where no contention exists.
+
+### Changed
+
+- `IUpdateInstaller.CleanupOldInstall`'s XML doc updated to reflect the broader scope. Method name unchanged for back-compat — consumers' `Program.cs` startup hook keeps working without edits.
+
+---
+
 ## [0.1.6] — 2026-05-25
 
 ### Fixed
@@ -111,6 +124,7 @@ Initial commit. Never published to nuget.org — superseded by 0.1.1 before the 
 - Full XML documentation on the public surface, `TreatWarningsAsErrors=true`, `AnalysisLevel=latest`.
 - SourceLink, deterministic builds, published symbol packages.
 
+[0.1.7]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.7
 [0.1.6]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.6
 [0.1.5]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.5
 [0.1.4]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.4

@@ -128,18 +128,23 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 
         public void CleanupOldInstall()
         {
-            try
-            {
-                DeleteDirectoryRobustly(Path.Combine(InstallDirectory, OldDirName));
-            }
+            var installDir = InstallDirectory;
+            // Both .old/ and .update/ are leftover state from a previous
+            // install. The running new binary is proof neither is needed
+            // any longer. Cleaning both here is the canonical retry path
+            // for the OneDrive / antivirus / Windows Search case where
+            // handles held at install time defeated the immediate cleanup;
+            // by next startup those handles have had time to release.
+            TrySwallow(() => DeleteDirectoryRobustly(Path.Combine(installDir, OldDirName)));
+            TrySwallow(() => DeleteDirectoryRobustly(Path.Combine(installDir, StagingDirName)));
+        }
+
+        private static void TrySwallow(Action action)
+        {
+            try { action(); }
             catch
             {
-                // Non-fatal — will retry on next startup. Stragglers in
-                // .old/ are typically the result of OneDrive / antivirus
-                // / Windows Search holding transient handles on files
-                // the swap moved in seconds earlier; the helper's retry
-                // budget covers the common case but a stubborn handle
-                // can still defeat it.
+                // Non-fatal — will retry on next startup.
             }
         }
 
