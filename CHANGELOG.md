@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.5] — 2026-05-23
+
+### Fixed
+
+- **`GhCliReleaseSource` returns null when `--prerelease` / a `Channel` is in play.** The list path asked `gh release list --json tagName,name,url,publishedAt,isDraft,isPrerelease` — but `gh release list` exposes a narrower field set than `gh release view`, and `url` is view-only. gh exited non-zero ("Unknown JSON field: \"url\""), `GhProcess` threw, the source's catch-all swallowed it, and consumers saw "Could not determine the latest release." Surfaced by pl-app running `update --prerelease` against a private repo whose only releases were prereleases. Fix: drop `name` and `url` from the list `--json` value — neither was read from the list result anyway (only `tagName`, `publishedAt`, `isDraft`, `isPrerelease` drive filter/sort). The full detail (incl. `url`, `assets`) is still fetched per-tag via `gh release view`. New regression test in `GhCliReleaseSourceTests` asserts the list args stay within `release list`'s supported fields.
+
+### Why this slipped through v0.1.4
+
+- The existing tests use a fake gh runner with canned JSON, so they never exercised the real gh CLI's field-validation. `gh release list` was only reached when `Channel` was set or `IncludePrereleases` was `true` at the source — both uncommon configs before `--prerelease` landed.
+
+---
+
 ## [0.1.4] — 2026-05-23
 
 ### Added
@@ -85,6 +97,7 @@ Initial commit. Never published to nuget.org — superseded by 0.1.1 before the 
 - Full XML documentation on the public surface, `TreatWarningsAsErrors=true`, `AnalysisLevel=latest`.
 - SourceLink, deterministic builds, published symbol packages.
 
+[0.1.5]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.5
 [0.1.4]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.4
 [0.1.3]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.3
 [0.1.2]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.2
