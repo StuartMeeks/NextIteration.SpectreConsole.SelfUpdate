@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.6] — 2026-05-25
+
+### Fixed
+
+- **`.old/` cleanup leaves a few stragglers on Windows when OneDrive (or antivirus / Windows Search) is syncing the install directory.** The swap moves the previous install's files into `.old/`, OneDrive picks them up for sync within seconds, and the next-startup `CleanupOldInstall` recursive delete races OneDrive's open handles — most files delete fine, the ones OneDrive is still touching throw `IOException("being used by another process")`, the catch-all swallows it, and the user sees `.old/` persist (often near-empty). Same race affects `SwapAsync`'s `.old/` reset and the staging `ResetStaging`. Read-only files extracted from archives hit a parallel `UnauthorizedAccessException` for similar reasons.
+- Fix: new internal `UpdateInstaller.DeleteDirectoryRobustly(path)` helper that (1) clears the `ReadOnly` attribute on every descendant file before each attempt and (2) retries the recursive delete on `IOException` / `UnauthorizedAccessException` at 200/400/800 ms — a ~1.4 s total budget tuned for OneDrive / AV / Search handle release latency. Applied to all four recursive-delete sites in `UpdateInstaller` (`CleanupOldInstall`, `SwapAsync`'s `.old/` reset, `ResetStaging`, `TryDeleteDirectory`). `CleanupOldInstall` still swallows on final failure (non-fatal — next startup will retry); the other three still throw (callers depend on the install being able to fail loudly).
+- Test seam: the helper accepts injectable `deleter` and `sleeper` callbacks so unit tests can simulate transient sharing-violations without a real Windows lock.
+
+### Why a retry rather than detecting OneDrive
+
+OneDrive detection is fragile (registry queries, reparse-point sniffing) and the retry strategy generalises to antivirus, Windows Search, indexers, backup agents — anything that opens a transient handle on a freshly-moved file. The cost when no contention exists is one no-op attribute walk over a tree we're about to delete: negligible.
+
+---
+
 ## [0.1.5] — 2026-05-23
 
 ### Fixed
@@ -97,6 +111,7 @@ Initial commit. Never published to nuget.org — superseded by 0.1.1 before the 
 - Full XML documentation on the public surface, `TreatWarningsAsErrors=true`, `AnalysisLevel=latest`.
 - SourceLink, deterministic builds, published symbol packages.
 
+[0.1.6]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.6
 [0.1.5]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.5
 [0.1.4]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.4
 [0.1.3]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.3
