@@ -58,6 +58,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 
         public string InstallDirectory => _installDirResolver();
 
+        public bool HasPendingCleanup
+        {
+            get
+            {
+                var installDir = InstallDirectory;
+                return Directory.Exists(Path.Combine(installDir, OldDirName))
+                    || Directory.Exists(Path.Combine(installDir, StagingDirName));
+            }
+        }
+
         public async Task InstallAsync(
             RemoteRelease release,
             IProgress<UpdateProgressEvent>? progress = null,

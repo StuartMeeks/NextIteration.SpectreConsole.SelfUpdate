@@ -45,7 +45,7 @@ services.AddSelfUpdater(opts =>
 });
 
 using var sp = services.BuildServiceProvider();
-sp.GetRequiredService<IUpdateInstaller>().CleanupOldInstall();
+UpdateCleanup.Run(sp);   // sweeps .old/.update; shows a message only if there's leftover state
 var checkTask = UpdateBanner.KickOffCheck(sp);
 
 var app = new CommandApp(new YourTypeRegistrar(sp));
@@ -193,7 +193,7 @@ For sources that don't have a channel concept (`HttpManifestSource`), host one m
 1. **Acquire lock.** `<install>/.update.lock` opened with `FileShare.None` + `FileOptions.DeleteOnClose`. Concurrent installs lose the race with a clear "another update is in progress" message.
 2. **Stage.** Download the asset under `<install>/.update/<tag>/`, run every registered `IPackageVerifier`, extract.
 3. **Swap.** Move every entry in `<install>/` (except the maintenance dirs) into `<install>/.old/`. Copy the extracted files into place. Delete `<install>/.update/`.
-4. **Cleanup later.** Next startup, `IUpdateInstaller.CleanupOldInstall()` deletes `<install>/.old/` — the running new binary is proof the swap completed.
+4. **Cleanup later.** Next startup, `IUpdateInstaller.CleanupOldInstall()` deletes `<install>/.old/` (and any leftover `<install>/.update/`) — the running new binary is proof the swap completed. Call it via `UpdateCleanup.Run(sp)`, which shows a "cleaning up" status message while it works but only when there is leftover state to remove.
 
 This avoids the "EXE is locked while running" problem on Windows without a separate restarter process.
 

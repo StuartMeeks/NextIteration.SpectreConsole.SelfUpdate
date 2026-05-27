@@ -56,12 +56,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
     {
         public string InstallDirectory { get; set; } = "/tmp/install";
 
+        public bool HasPendingCleanup { get; set; }
+
+        public int CleanupCallCount { get; private set; }
+
         public Task InstallAsync(
             RemoteRelease release,
             IProgress<UpdateProgressEvent>? progress = null,
             Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>>? onConflict = null,
             CancellationToken ct = default) => Task.CompletedTask;
 
-        public void CleanupOldInstall() { }
+        public void CleanupOldInstall() => CleanupCallCount++;
     }
 }
