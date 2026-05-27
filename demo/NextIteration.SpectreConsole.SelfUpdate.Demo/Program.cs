@@ -25,7 +25,10 @@ internal sealed class Program
 
         // 1. Sweep up the previous install (the running new binary is proof
         //    the last swap completed). Idempotent — safe to call every run.
-        serviceProvider.GetRequiredService<IUpdateInstaller>().CleanupOldInstall();
+        //    UpdateCleanup shows a status message while it works, but only when
+        //    there's leftover .old/ or .update/ state to remove; otherwise it's
+        //    silent.
+        UpdateCleanup.Run(serviceProvider);
 
         // 2. Kick off the background "is there a new version?" probe. It's
         //    short-timeout and read-through-cached; on the warm path it

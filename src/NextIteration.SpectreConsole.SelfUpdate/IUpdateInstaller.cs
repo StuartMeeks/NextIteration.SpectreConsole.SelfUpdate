@@ -13,6 +13,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         string InstallDirectory { get; }
 
         /// <summary>
+        /// <see langword="true"/> when a startup <see cref="CleanupOldInstall"/>
+        /// would actually delete something — i.e. a <c>.old/</c> or
+        /// <c>.update/</c> directory left by a previous update still exists.
+        /// Lets a UI layer (e.g. <see cref="UpdateCleanup"/>) show a
+        /// "cleaning up" message only when there is work to do. Cheap
+        /// directory-existence check with no side effects.
+        /// </summary>
+        bool HasPendingCleanup { get; }
+
+        /// <summary>
         /// Apply the given release. Throws <see cref="UpdateException"/>
         /// when any pipeline stage fails; on success returns once all files
         /// are in place. The caller is responsible for telling the user

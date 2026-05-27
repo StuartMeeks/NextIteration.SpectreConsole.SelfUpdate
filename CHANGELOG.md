@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.8] — 2026-05-27
+
+### Added
+
+- **`UpdateCleanup.Run(...)` startup-cleanup helper.** Startup `CleanupOldInstall()` is synchronous and, under OneDrive / antivirus / Windows Search contention, the `DeleteDirectoryRobustly` retry/backoff path can take several seconds — with no output the app looks hung. New static `UpdateCleanup` helper (mirrors `UpdateBanner`) wraps the cleanup and shows a `Cleaning up previous update…` status spinner **only when there is leftover state to remove**; the common no-leftovers case stays completely silent. `Run(IServiceProvider, IAnsiConsole?)` is the drop-in startup entry point; a `Run(IUpdateInstaller, IAnsiConsole)` overload is provided for explicit/headless callers.
+- **`IUpdateInstaller.HasPendingCleanup`.** Cheap, side-effect-free check that returns `true` when a `.old/` or `.update/` directory left by a previous update still exists. Lets a UI layer decide whether to show a cleanup message.
+
+### Changed
+
+- The demo `Program.cs` and the README quick start now call `UpdateCleanup.Run(serviceProvider)` instead of `IUpdateInstaller.CleanupOldInstall()` directly. Purely additive — `CleanupOldInstall()` is unchanged, so existing consumers keep compiling; switching the one startup line opts into the message.
+
+---
+
 ## [0.1.7] — 2026-05-25
 
 ### Fixed
@@ -124,6 +137,7 @@ Initial commit. Never published to nuget.org — superseded by 0.1.1 before the 
 - Full XML documentation on the public surface, `TreatWarningsAsErrors=true`, `AnalysisLevel=latest`.
 - SourceLink, deterministic builds, published symbol packages.
 
+[0.1.8]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.8
 [0.1.7]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.7
 [0.1.6]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.6
 [0.1.5]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.5

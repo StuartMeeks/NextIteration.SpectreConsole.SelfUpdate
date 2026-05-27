@@ -169,6 +169,42 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         }
 
         [Fact]
+        public void HasPendingCleanup_when_neither_directory_exists_false()
+        {
+            using var work = new TempDir();
+            var installDir = Path.Combine(work.Path, "install");
+            Directory.CreateDirectory(installDir);
+
+            var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-x64");
+
+            Assert.False(installer.HasPendingCleanup);
+        }
+
+        [Fact]
+        public void HasPendingCleanup_when_old_directory_exists_true()
+        {
+            using var work = new TempDir();
+            var installDir = Path.Combine(work.Path, "install");
+            Directory.CreateDirectory(Path.Combine(installDir, ".old"));
+
+            var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-x64");
+
+            Assert.True(installer.HasPendingCleanup);
+        }
+
+        [Fact]
+        public void HasPendingCleanup_when_update_directory_exists_true()
+        {
+            using var work = new TempDir();
+            var installDir = Path.Combine(work.Path, "install");
+            Directory.CreateDirectory(Path.Combine(installDir, ".update", "v1.4.2"));
+
+            var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-x64");
+
+            Assert.True(installer.HasPendingCleanup);
+        }
+
+        [Fact]
         public async Task InstallAsync_when_lock_file_held_throws()
         {
             using var work = new TempDir();
