@@ -175,6 +175,31 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             if (current is null && latest is null) return 0;
             if (current is null) return 1;   // no-prerelease > prerelease, so current is newer
             if (latest is null) return -1;   // current has prerelease, latest does not → current is older
+
+            // Semver §11: compare dot-separated identifiers left to right.
+            // Numeric identifiers compare numerically; numeric is always lower
+            // than alphanumeric; otherwise compare lexically (ASCII order). A
+            // larger set of identifiers outranks a smaller one when all preceding
+            // identifiers are equal.
+            var cParts = current.Split('.');
+            var lParts = latest.Split('.');
+            var shared = Math.Min(cParts.Length, lParts.Length);
+            for (var i = 0; i < shared; i++)
+            {
+                var cmp = ComparePrereleaseIdentifier(cParts[i], lParts[i]);
+                if (cmp != 0) return cmp;
+            }
+            return cParts.Length.CompareTo(lParts.Length);
+        }
+
+        private static int ComparePrereleaseIdentifier(string current, string latest)
+        {
+            var cNumeric = long.TryParse(current, out var cn);
+            var lNumeric = long.TryParse(latest, out var ln);
+
+            if (cNumeric && lNumeric) return cn.CompareTo(ln);
+            if (cNumeric) return -1;   // numeric identifiers rank lower than alphanumeric
+            if (lNumeric) return 1;
             return string.CompareOrdinal(current, latest);
         }
 

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.9] — 2026-06-01
+
+### Fixed
+
+- **Prerelease versions with multi-digit numeric identifiers compared as strings, so `rc.10` looked older than `rc.9`.** `ComparePrerelease` used `string.CompareOrdinal`, which orders `"rc.9"` after `"rc.10"` character-by-character (`'9'` > `'1'`). A CLI on `0.5.0-rc.9` running `update --prerelease` against a `0.5.0-rc.10` release therefore reported "Already up to date." Comparison now follows Semantic Versioning §11: dot-separated prerelease identifiers compare left to right, numeric identifiers compare numerically, numeric ranks below alphanumeric, and a longer identifier set outranks a shorter one with an equal prefix.
+
+### Changed
+
+- Bumped NuGet dependencies to their latest versions: `Microsoft.Extensions.DependencyInjection.Abstractions` and `Microsoft.Extensions.Http` 10.0.5 → 10.0.8, `Microsoft.SourceLink.GitHub` 8.0.0 → 10.0.300, and the test stack (`Microsoft.NET.Test.Sdk` 17.11.1 → 18.6.0, `xunit` 2.9.2 → 2.9.3, `xunit.runner.visualstudio` 2.8.2 → 3.1.5, `coverlet.collector` 6.0.2 → 10.0.1).
+
+---
+
 ## [0.1.8] — 2026-05-27
 
 ### Added

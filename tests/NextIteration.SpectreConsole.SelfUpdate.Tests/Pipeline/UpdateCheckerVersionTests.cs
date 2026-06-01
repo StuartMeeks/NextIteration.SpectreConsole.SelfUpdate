@@ -26,6 +26,17 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         [InlineData("1.0.0-beta", "1.0.0-alpha", false)] // beta > alpha lexicographically
         [InlineData("1.0.0-beta.1", "1.0.0-beta.2", true)]
         [InlineData("1.0.0-beta", "1.0.0-beta", false)]
+        // Numeric prerelease identifiers compare numerically, not lexically.
+        [InlineData("0.5.0-rc.9", "0.5.0-rc.10", true)]   // rc.10 is newer than rc.9
+        [InlineData("0.5.0-rc.10", "0.5.0-rc.9", false)]  // rc.9 is not newer than rc.10
+        [InlineData("1.0.0-alpha.2", "1.0.0-alpha.10", true)]
+        [InlineData("1.0.0-rc.1", "1.0.0-rc.1", false)]
+        // Fewer identifiers rank lower when the shared prefix is equal.
+        [InlineData("1.0.0-beta", "1.0.0-beta.1", true)]
+        [InlineData("1.0.0-beta.1", "1.0.0-beta", false)]
+        // Numeric identifiers rank lower than alphanumeric ones.
+        [InlineData("1.0.0-1", "1.0.0-alpha", true)]
+        [InlineData("1.0.0-alpha", "1.0.0-1", false)]
         public void IsNewer_with_semver_prerelease_compares_correctly(string current, string latest, bool expected)
         {
             Assert.Equal(expected, UpdateChecker.IsNewer(current, latest));

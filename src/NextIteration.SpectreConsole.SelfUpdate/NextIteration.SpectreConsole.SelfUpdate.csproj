@@ -11,7 +11,7 @@
 
 	<PropertyGroup>
 		<PackageId>NextIteration.SpectreConsole.SelfUpdate</PackageId>
-		<Version>0.1.8</Version>
+		<Version>0.1.9</Version>
 		<Authors>Stuart Meeks</Authors>
 		<Description>Self-update for Spectre.Console CLIs: pluggable update sources (GitHub Releases over HTTP, GitHub Releases via gh CLI for private repos, generic HTTPS manifest, custom), SHA-256 verification, atomic file swap, and a drop-in `update` command.</Description>
 		<GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
@@ -39,11 +39,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
-		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.8" />
 		<PackageReference Include="Spectre.Console" Version="0.55.2" />
 		<PackageReference Include="Spectre.Console.Cli" Version="0.55.0" />
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300" PrivateAssets="All" />
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 		<None Include="icon.png" Pack="true" PackagePath="" />
 	</ItemGroup>
