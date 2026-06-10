@@ -11,7 +11,7 @@
 
 	<PropertyGroup>
 		<PackageId>NextIteration.SpectreConsole.SelfUpdate</PackageId>
-		<Version>0.1.9</Version>
+		<Version>0.1.10</Version>
 		<Authors>Stuart Meeks</Authors>
 		<Description>Self-update for Spectre.Console CLIs: pluggable update sources (GitHub Releases over HTTP, GitHub Releases via gh CLI for private repos, generic HTTPS manifest, custom), SHA-256 verification, atomic file swap, and a drop-in `update` command.</Description>
 		<GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
