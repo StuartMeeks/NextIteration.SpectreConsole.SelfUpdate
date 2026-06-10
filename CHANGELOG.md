@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.10] — 2026-06-10
+
+### Changed
+
+- Bumped NuGet dependencies to their latest stable versions: `Microsoft.Extensions.DependencyInjection.Abstractions` and `Microsoft.Extensions.Http` 10.0.8 → 10.0.9, `Spectre.Console` and `Spectre.Console.Testing` 0.55.2 → 0.56.0.
+- **Release workflow now uses NuGet Trusted Publishing.** The publish job requests a short-lived API key via `NuGet/login@v1` (GitHub OIDC, `id-token: write`) immediately before `dotnet nuget push`, instead of relying on a long-lived `NUGET_API_KEY` secret.
+
+---
+
 ## [0.1.9] — 2026-06-01
 
 ### Fixed
