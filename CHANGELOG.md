@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] — 2026-06-20
+
+### Changed
+
+- **The package now multi-targets `net8.0` alongside `net10.0`** (previously `net10.0` only). .NET 8 CLIs can now consume the library directly instead of being forced onto the latest runtime. No API or behaviour changes — every public surface and feature is identical across both targets, and all dependencies (`Microsoft.Extensions.*`, `Spectre.Console`, `Spectre.Console.Cli`) already ship `net8.0` assets. The produced `.nupkg` carries both `lib/net8.0/` and `lib/net10.0/` folders.
+
+---
+
 ## [0.1.10] — 2026-06-10
 
 ### Changed
