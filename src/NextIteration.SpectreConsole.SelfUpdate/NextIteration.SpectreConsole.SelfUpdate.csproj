@@ -11,7 +11,7 @@
 
 	<PropertyGroup>
 		<PackageId>NextIteration.SpectreConsole.SelfUpdate</PackageId>
-		<Version>0.2.0</Version>
+		<Version>0.3.0</Version>
 		<Authors>Stuart Meeks</Authors>
 		<Description>Self-update for Spectre.Console CLIs: pluggable update sources (GitHub Releases over HTTP, GitHub Releases via gh CLI for private repos, generic HTTPS manifest, custom), SHA-256 verification, atomic file swap, and a drop-in `update` command.</Description>
 		<GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
@@ -38,10 +38,25 @@
 		<InternalsVisibleTo Include="NextIteration.SpectreConsole.SelfUpdate.Tests" />
 	</ItemGroup>
 
+	<!--
+		Runtime-aligned Microsoft platform deps are floored per-TFM. A library's
+		PackageReference version is a floor NuGet forces on every consumer, so a
+		single 10.0.x floor would drag net8 consumers off their own 8.0.x LTS
+		servicing line. Each target floors these at the latest stable servicing
+		version of its own major.
+	-->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
+	</ItemGroup>
+
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
-		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
-		<PackageReference Include="Spectre.Console" Version="0.56.0" />
+		<PackageReference Include="Spectre.Console" Version="0.57.2" />
 		<PackageReference Include="Spectre.Console.Cli" Version="0.55.0" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300" PrivateAssets="All" />
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
