@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.0] — 2026-07-24
+
+### Changed
+
+- **Runtime-aligned Microsoft platform dependencies are now floored per target framework.** In a library a `PackageReference` version is a minimum floor NuGet forces on every downstream consumer (lowest-applicable-version resolution). Since 0.2.0 multi-targeted `net8.0` alongside `net10.0` but floored `Microsoft.Extensions.DependencyInjection.Abstractions` and `Microsoft.Extensions.Http` at a single `10.0.x`, net8 consumers were dragged off their own `8.0.x` LTS servicing line. These two packages are now split into per-TFM `ItemGroup`s: `net8.0` floors at the latest stable `8.0.x` (`DependencyInjection.Abstractions` 8.0.2, `Http` 8.0.1), `net10.0` at the latest stable `10.0.x` (both 10.0.10). The `net8.0` dependency group in the `.nupkg` no longer pins net8 apps to a .NET 10 servicing line.
+- Bumped `Spectre.Console` (and the test-only `Spectre.Console.Testing`) 0.56.0 → 0.57.2. `Spectre.Console.Cli` stays at 0.55.0 (still its latest stable). These are independently-versioned third-party packages, so they remain a single common `PackageReference` at the built/tested version rather than being split per-TFM.
+
+---
+
 ## [0.2.0] — 2026-06-20
 
 ### Changed
@@ -166,6 +175,10 @@ Initial commit. Never published to nuget.org — superseded by 0.1.1 before the 
 - Full XML documentation on the public surface, `TreatWarningsAsErrors=true`, `AnalysisLevel=latest`.
 - SourceLink, deterministic builds, published symbol packages.
 
+[0.3.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.3.0
+[0.2.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.2.0
+[0.1.10]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.10
+[0.1.9]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.9
 [0.1.8]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.8
 [0.1.7]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.7
 [0.1.6]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.6
