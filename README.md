@@ -3,7 +3,7 @@
 [![NuGet](https://img.shields.io/nuget/v/NextIteration.SpectreConsole.SelfUpdate.svg)](https://www.nuget.org/packages/NextIteration.SpectreConsole.SelfUpdate/)
 [![Downloads](https://img.shields.io/nuget/dt/NextIteration.SpectreConsole.SelfUpdate.svg)](https://www.nuget.org/packages/NextIteration.SpectreConsole.SelfUpdate/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-purple.svg)](https://dotnet.microsoft.com/)
 [![CI](https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/actions/workflows/ci.yml/badge.svg)](https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/actions/workflows/ci.yml)
 
 Self-update for CLI tools built on [Spectre.Console](https://spectreconsole.net/) — check for new releases, download, verify, and atomically swap the install in place. Pluggable update sources (public GitHub Releases over HTTP, private repos via the `gh` CLI, generic HTTPS manifest, your own).
@@ -31,6 +31,8 @@ Stop hand-rolling the same "where's the latest release / what's my RID / where d
 ```shell
 dotnet add package NextIteration.SpectreConsole.SelfUpdate
 ```
+
+Targets `net8.0` and `net10.0`. Both targets carry an identical public surface and are covered by the same test suite on Linux, macOS, and Windows.
 
 ## Quick start
 

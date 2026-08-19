@@ -20,10 +20,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup .NET 10
+      - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          # 8.0.x provides the runtime the net8.0 test leg executes on; the
+          # 10.0.x SDK does the building for both targets.
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Restore
         run: dotnet restore
@@ -51,10 +55,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup .NET 10
+      - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          # 8.0.x provides the runtime the net8.0 test leg executes on; the
+          # 10.0.x SDK does the building for both targets.
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Test
-        run: dotnet test --configuration Release --verbosity normal
+        run: dotnet test --configuration Release

@@ -37,9 +37,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Sources
             Assert.NotNull(release);
             Assert.Equal("v1.4.2", release!.Tag);
             Assert.Equal("stable", release.Channel);
-            Assert.Single(release.Assets);
+            var asset = Assert.Single(release.Assets);
             Assert.Equal("abc123def4567890abc123def4567890abc123def4567890abc123def4567890",
-                release.Assets[0].Metadata["sha256"]);
+                asset.Metadata["sha256"]);
         }
 
         [Fact]

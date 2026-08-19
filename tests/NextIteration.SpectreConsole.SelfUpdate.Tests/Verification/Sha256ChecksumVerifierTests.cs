@@ -16,7 +16,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Verification
             using var dir = new TempDir();
             var path = dir.Combine("payload.bin");
             var bytes = new byte[] { 1, 2, 3, 4 };
-            await File.WriteAllBytesAsync(path, bytes);
+            await File.WriteAllBytesAsync(path, bytes, TestContext.Current.CancellationToken);
 
             var sha = ComputeSha256Hex(bytes);
             var asset = MakeAsset("payload.bin", new Dictionary<string, string> { ["sha256"] = sha });
@@ -31,7 +31,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Verification
         {
             using var dir = new TempDir();
             var path = dir.Combine("payload.bin");
-            await File.WriteAllBytesAsync(path, new byte[] { 1, 2, 3, 4 });
+            await File.WriteAllBytesAsync(path, new byte[] { 1, 2, 3, 4 }, TestContext.Current.CancellationToken);
 
             var asset = MakeAsset("payload.bin", new Dictionary<string, string>
             {
@@ -51,7 +51,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Verification
             using var dir = new TempDir();
             var path = dir.Combine("payload.bin");
             var bytes = new byte[] { 5, 6, 7 };
-            await File.WriteAllBytesAsync(path, bytes);
+            await File.WriteAllBytesAsync(path, bytes, TestContext.Current.CancellationToken);
 
             var asset = MakeAsset("payload.bin", new Dictionary<string, string>());
             var manifestAsset = MakeAsset("SHA256SUMS.txt", new Dictionary<string, string>());
@@ -77,7 +77,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Verification
         {
             using var dir = new TempDir();
             var path = dir.Combine("payload.bin");
-            await File.WriteAllBytesAsync(path, new byte[] { 1, 2, 3 });
+            await File.WriteAllBytesAsync(path, new byte[] { 1, 2, 3 }, TestContext.Current.CancellationToken);
 
             var asset = MakeAsset("payload.bin", new Dictionary<string, string>());
             var release = MakeRelease(new[] { asset });   // no SHA256SUMS asset
