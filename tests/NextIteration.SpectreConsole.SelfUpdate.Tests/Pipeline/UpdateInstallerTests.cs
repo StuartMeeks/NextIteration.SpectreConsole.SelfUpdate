@@ -92,13 +92,15 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 AssetBytes = a => CreateZipBytes(("myapp-v1.0.0-linux-x64", new[] { ("a.txt", "x"), ("b.txt", "y") })),
             };
 
-            var stages = new List<UpdateStage>();
-            var progress = new Progress<UpdateProgressEvent>(e => stages.Add(e.Stage));
+            var progress = new RecordingProgress<UpdateProgressEvent>();
             var installer = NewInstaller(installDir, source, "linux-x64");
             await installer.InstallAsync(release, progress, onConflict: null, CancellationToken.None);
 
-            // Allow Progress<T> to drain.
-            await Task.Yield();
+            // Every stage boundary is reported synchronously on the awaited
+            // path, so all four are present by the time InstallAsync returns —
+            // no draining needed. Late byte-level download reports may still
+            // arrive, which is why this asserts over a snapshot.
+            var stages = progress.Snapshot.Select(e => e.Stage).ToArray();
 
             Assert.Contains(UpdateStage.Downloading, stages);
             Assert.Contains(UpdateStage.Verifying, stages);
