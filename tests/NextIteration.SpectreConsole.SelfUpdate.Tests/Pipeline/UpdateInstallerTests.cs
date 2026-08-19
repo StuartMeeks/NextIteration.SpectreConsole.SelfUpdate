@@ -43,12 +43,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             await installer.InstallAsync(release, progress: null, onConflict: null, CancellationToken.None);
 
             // New files in place
-            Assert.Equal("new binary", await File.ReadAllTextAsync(Path.Combine(installDir, "myapp.exe")));
-            Assert.Equal("{}", await File.ReadAllTextAsync(Path.Combine(installDir, "settings.json")));
+            Assert.Equal("new binary", await File.ReadAllTextAsync(Path.Combine(installDir, "myapp.exe"), TestContext.Current.CancellationToken));
+            Assert.Equal("{}", await File.ReadAllTextAsync(Path.Combine(installDir, "settings.json"), TestContext.Current.CancellationToken));
 
             // Old file moved to .old/
             Assert.True(Directory.Exists(Path.Combine(installDir, ".old")));
-            Assert.Equal("old content", await File.ReadAllTextAsync(Path.Combine(installDir, ".old", "old-file.txt")));
+            Assert.Equal("old content", await File.ReadAllTextAsync(Path.Combine(installDir, ".old", "old-file.txt"), TestContext.Current.CancellationToken));
 
             // Staging removed
             Assert.False(Directory.Exists(Path.Combine(installDir, ".update")));

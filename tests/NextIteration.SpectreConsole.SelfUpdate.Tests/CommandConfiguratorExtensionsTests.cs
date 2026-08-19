@@ -22,7 +22,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         {
             var (app, console) = BuildApp(c => c.AddUpdateCommand());
 
-            var exit = await app.RunAsync(HelpArgs);
+            var exit = await app.RunAsync(HelpArgs, TestContext.Current.CancellationToken);
 
             Assert.Equal(0, exit);
             Assert.Contains("update", console.Output, StringComparison.OrdinalIgnoreCase);
@@ -33,7 +33,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         {
             var (app, console) = BuildApp(c => c.AddUpdateCommand("upgrade"));
 
-            var exit = await app.RunAsync(HelpArgs);
+            var exit = await app.RunAsync(HelpArgs, TestContext.Current.CancellationToken);
 
             Assert.Equal(0, exit);
             Assert.Contains("upgrade", console.Output, StringComparison.OrdinalIgnoreCase);
@@ -44,7 +44,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         {
             var (app, console) = BuildApp(c => c.AddUpdateBranch());
 
-            var exit = await app.RunAsync(UpdateHelpArgs);
+            var exit = await app.RunAsync(UpdateHelpArgs, TestContext.Current.CancellationToken);
 
             Assert.Equal(0, exit);
             Assert.Contains("check", console.Output, StringComparison.OrdinalIgnoreCase);
@@ -56,7 +56,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         {
             var (app, console) = BuildApp(c => c.AddUpdateBranch("ota"));
 
-            var exit = await app.RunAsync(OtaHelpArgs);
+            var exit = await app.RunAsync(OtaHelpArgs, TestContext.Current.CancellationToken);
 
             Assert.Equal(0, exit);
             Assert.Contains("check", console.Output, StringComparison.OrdinalIgnoreCase);

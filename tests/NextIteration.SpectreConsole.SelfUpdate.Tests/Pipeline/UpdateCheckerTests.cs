@@ -19,7 +19,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 envResolver: name => name == "MYAPP_SKIP_UPDATE_CHECK" ? "1" : null,
                 utcNow: () => DateTimeOffset.UtcNow);
 
-            var info = await checker.CheckAsync();
+            var info = await checker.CheckAsync(TestContext.Current.CancellationToken);
 
             Assert.Null(info);
             Assert.Equal(0, source.GetLatestCallCount);
@@ -38,7 +38,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             var source = new FakeUpdateSource { LatestForChannel = TestRelease("v1.2.3") };
             var checker = NewChecker(opts, source, "1.0.0");
 
-            var info = await checker.CheckAsync();
+            var info = await checker.CheckAsync(TestContext.Current.CancellationToken);
 
             Assert.Null(info);
             Assert.Equal(0, source.GetLatestCallCount);
@@ -54,12 +54,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             var checker = NewChecker(opts, source, "1.0.0", utcNow: () => nowAnchor);
 
             // First call writes the cache.
-            var first = await checker.CheckAsync();
+            var first = await checker.CheckAsync(TestContext.Current.CancellationToken);
             Assert.NotNull(first);
             Assert.Equal(1, source.GetLatestCallCount);
 
             // Second call with the same now should reuse cache.
-            var second = await checker.CheckAsync();
+            var second = await checker.CheckAsync(TestContext.Current.CancellationToken);
             Assert.NotNull(second);
             Assert.Equal(1, source.GetLatestCallCount);
         }
@@ -74,9 +74,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             DateTimeOffset now = anchor;
             var checker = NewChecker(opts, source, "1.0.0", utcNow: () => now);
 
-            await checker.CheckAsync();
+            await checker.CheckAsync(TestContext.Current.CancellationToken);
             now = anchor.AddMinutes(10);   // expire the cache
-            await checker.CheckAsync();
+            await checker.CheckAsync(TestContext.Current.CancellationToken);
 
             Assert.Equal(2, source.GetLatestCallCount);
         }
@@ -92,10 +92,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             };
 
             var checker = NewChecker(opts, source, "1.0.0");
-            await checker.CheckAsync();   // populates cache for channel=null
+            await checker.CheckAsync(TestContext.Current.CancellationToken);   // populates cache for channel=null
 
             opts.Channel = "beta";
-            await checker.CheckAsync();   // should refetch because channel mismatch
+            await checker.CheckAsync(TestContext.Current.CancellationToken);   // should refetch because channel mismatch
 
             Assert.Equal(2, source.GetLatestCallCount);
         }
@@ -108,7 +108,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             var source = new FakeUpdateSource { LatestForChannel = TestRelease("v1.0.5") };
             var checker = NewChecker(opts, source, "1.0.0");
 
-            var info = await checker.CheckAsync();
+            var info = await checker.CheckAsync(TestContext.Current.CancellationToken);
 
             Assert.NotNull(info);
             Assert.True(info!.IsUpdateAvailable);
@@ -128,11 +128,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             var checker = NewChecker(opts, source, "1.0.0");
 
             // First call without override populates the default-prerelease cache.
-            await checker.CheckAsync();
+            await checker.CheckAsync(TestContext.Current.CancellationToken);
             Assert.Equal(1, source.GetLatestCallCount);
 
             // Second call with override=true must not reuse the default cache.
-            await checker.CheckAsync(includePrereleasesOverride: true);
+            await checker.CheckAsync(includePrereleasesOverride: true, ct: TestContext.Current.CancellationToken);
             Assert.Equal(2, source.GetLatestCallCount);
             Assert.True(source.LastIncludePrereleasesOverride);
         }
@@ -145,7 +145,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             var source = new FakeUpdateSource { LatestForChannel = TestRelease("v1.0.0") };
             var checker = NewChecker(opts, source, "1.0.0");
 
-            var info = await checker.CheckAsync();
+            var info = await checker.CheckAsync(TestContext.Current.CancellationToken);
 
             Assert.NotNull(info);
             Assert.False(info!.IsUpdateAvailable);

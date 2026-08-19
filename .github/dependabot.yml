@@ -1,0 +1,27 @@
+# Weekly dependency PRs. NuGet versions live in each csproj (no central package
+# management), so Dependabot walks the whole tree rather than a manifest folder.
+version: 2
+
+updates:
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Bump"
+    labels:
+      - dependencies
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Bump"
+    labels:
+      - dependencies
+      - github-actions

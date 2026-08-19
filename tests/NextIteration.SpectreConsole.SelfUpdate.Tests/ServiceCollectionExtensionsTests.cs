@@ -103,8 +103,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
 
             using var sp = services.BuildServiceProvider();
             var verifiers = sp.GetServices<IPackageVerifier>().ToArray();
-            Assert.Single(verifiers);
-            Assert.Same(stubVerifier, verifiers[0]);
+            var verifier = Assert.Single(verifiers);
+            Assert.Same(stubVerifier, verifier);
         }
 
         [Fact]

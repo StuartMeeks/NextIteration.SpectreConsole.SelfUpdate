@@ -38,14 +38,14 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Sources
 
             Assert.NotNull(release);
             Assert.Equal("v1.4.2", release!.Tag);
-            Assert.Single(release.Assets);
-            Assert.Equal("v1.4.2", release.Assets[0].Metadata[GhCliReleaseSource.TagMetadataKey]);
+            var asset = Assert.Single(release.Assets);
+            Assert.Equal("v1.4.2", asset.Metadata[GhCliReleaseSource.TagMetadataKey]);
 
             // First (and only) call should have been `release view ... --repo acme/myapp`
-            Assert.Single(runner.Invocations);
-            Assert.Equal("release", runner.Invocations[0][0]);
-            Assert.Equal("view", runner.Invocations[0][1]);
-            Assert.Contains(Repo, runner.Invocations[0]);
+            var invocation = Assert.Single(runner.Invocations);
+            Assert.Equal("release", invocation[0]);
+            Assert.Equal("view", invocation[1]);
+            Assert.Contains(Repo, invocation);
         }
 
         [Fact]

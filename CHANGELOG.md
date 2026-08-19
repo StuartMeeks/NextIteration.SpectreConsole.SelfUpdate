@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.1] — 2026-08-19
+
+### Changed
+
+- **The `net8.0` target is now actually tested, not just compiled.** Since 0.2.0 the package shipped `lib/net8.0/` while the test project single-targeted `net10.0` and CI installed only the 10.0.x SDK — every net8 asset was published unverified. The test project now multi-targets `net8.0;net10.0` and CI/release install the 8.0.x runtime alongside the 10.0.x SDK, so the full suite runs against both targets on Linux, macOS, and Windows (196 tests × 2 TFMs).
+- **Test stack migrated from xUnit v2 to xUnit v3** (`xunit` 2.9.3 → `xunit.v3` 4.0.0). xUnit v3 test projects are self-executing Microsoft.Testing.Platform hosts, and the .NET 10 SDK dropped support for testing through the VSTest bridge entirely, so the VSTest-era packages are gone: `Microsoft.NET.Test.Sdk`, `xunit.runner.visualstudio`, and `coverlet.collector` (a VSTest data collector that no CI job ever invoked) are no longer referenced. `dotnet test` is pointed at MTP by a `test.runner` setting in a new root `global.json`; it pins no SDK version. Test call sites now pass `TestContext.Current.CancellationToken` into cancellable async APIs, and single-element assertions use the value returned by `Assert.Single` — both required by the v3 analyzers under `TreatWarningsAsErrors=true`.
+- **Package validation now runs against a published baseline.** `EnablePackageValidation` was already on but had no `PackageValidationBaselineVersion`, so it only checked framework compatibility. The baseline is now `0.3.0`: an accidental break in the public surface relative to the last release fails the build instead of shipping.
+- Bumped `Microsoft.Extensions.DependencyInjection.Abstractions` and `Microsoft.Extensions.Http` 10.0.10 → 10.0.11 **on the `net10.0` target only**. The `net8.0` floors stay at 8.0.2 / 8.0.1 — those are the final 8.0.x servicing versions, so per the per-TFM flooring introduced in 0.3.0 there is nothing to move. Build-only `Microsoft.SourceLink.GitHub` 10.0.301 → 10.0.400.
+- Added `.github/dependabot.yml` — weekly `nuget` and `github-actions` update PRs, replacing the hand-rolled dependency-bump PRs.
+- README: the `.NET` badge advertised 10.0 only, stale since 0.2.0 multi-targeted; it now reads `8.0 | 10.0`, and the install section states the supported targets.
+
+The library's own API and behaviour are unchanged from 0.3.0 — now enforced by the package-validation baseline. The only change visible to consumers is the `net10.0` dependency floor moving to 10.0.11.
+
+---
+
 ## [0.3.0] — 2026-07-24
 
 ### Changed
@@ -175,6 +190,7 @@ Initial commit. Never published to nuget.org — superseded by 0.1.1 before the 
 - Full XML documentation on the public surface, `TreatWarningsAsErrors=true`, `AnalysisLevel=latest`.
 - SourceLink, deterministic builds, published symbol packages.
 
+[0.3.1]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.3.1
 [0.3.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.3.0
 [0.2.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.2.0
 [0.1.10]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.1.10

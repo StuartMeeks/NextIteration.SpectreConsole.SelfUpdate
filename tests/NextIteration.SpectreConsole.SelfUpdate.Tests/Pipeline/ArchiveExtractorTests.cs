@@ -20,8 +20,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
 
             await ArchiveExtractor.ExtractAsync(zipPath, dest, CancellationToken.None);
 
-            Assert.Equal("hello", await File.ReadAllTextAsync(Path.Combine(dest, "file1.txt")));
-            Assert.Equal("world", await File.ReadAllTextAsync(Path.Combine(dest, "nested", "file2.txt")));
+            Assert.Equal("hello", await File.ReadAllTextAsync(Path.Combine(dest, "file1.txt"), TestContext.Current.CancellationToken));
+            Assert.Equal("world", await File.ReadAllTextAsync(Path.Combine(dest, "nested", "file2.txt"), TestContext.Current.CancellationToken));
         }
 
         [Fact]
@@ -34,8 +34,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
 
             await ArchiveExtractor.ExtractAsync(tarGzPath, dest, CancellationToken.None);
 
-            Assert.Equal("hello", await File.ReadAllTextAsync(Path.Combine(dest, "file1.txt")));
-            Assert.Equal("world", await File.ReadAllTextAsync(Path.Combine(dest, "nested", "file2.txt")));
+            Assert.Equal("hello", await File.ReadAllTextAsync(Path.Combine(dest, "file1.txt"), TestContext.Current.CancellationToken));
+            Assert.Equal("world", await File.ReadAllTextAsync(Path.Combine(dest, "nested", "file2.txt"), TestContext.Current.CancellationToken));
         }
 
         [Fact]
@@ -43,7 +43,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         {
             using var dir = new TempDir();
             var rarPath = dir.Combine("archive.rar");
-            await File.WriteAllBytesAsync(rarPath, new byte[] { 0x52, 0x61, 0x72, 0x21 });
+            await File.WriteAllBytesAsync(rarPath, new byte[] { 0x52, 0x61, 0x72, 0x21 }, TestContext.Current.CancellationToken);
 
             var ex = await Assert.ThrowsAsync<UpdateException>(() =>
                 ArchiveExtractor.ExtractAsync(rarPath, dir.Combine("out"), CancellationToken.None));
