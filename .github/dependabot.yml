@@ -23,7 +23,7 @@ updates:
       - dependencies
       - nuget
     # -------------------------------------------------------------------------
-    # These two carry deliberate per-TFM floors (see the csproj comment): a
+    # These two carry deliberate per-TFM floors (see Directory.Packages.props): a
     # net8.0 consumer must stay on its own 8.0.x servicing line, so an
     # 8.x -> 10.x major PR is never mergeable and would just be weekly noise.
     #

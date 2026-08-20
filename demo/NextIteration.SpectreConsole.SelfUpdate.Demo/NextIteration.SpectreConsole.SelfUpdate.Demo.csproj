@@ -3,9 +3,15 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net10.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
 		<IsPackable>false</IsPackable>
+		<!--
+			Not shipped, so its types are not public surface. The root
+			Directory.Build.props turns GenerateDocumentationFile on for the
+			package; leaving it on here would demand XML docs on sample code and,
+			with TreatWarningsAsErrors, fail the build for it. Same reasoning as
+			the test project (STANDARD.md 2.7).
+		-->
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>
