@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- **`release.yml` folded into `ci.yml`.** Publishing now happens in the same workflow run as the build, so the `publish` job pushes the artifact this run's `build` job produced — the exact bytes the gate tested. The old tag-triggered `release.yml` rebuilt from the tag and published an artifact no gate had ever seen. It also globbed `*.nupkg` when uploading, so the `.snupkg` was built and then silently never published; the glob is now `*nupkg` and symbols ship. Repointing the nuget.org Trusted Publishing policy from `release.yml` to `ci.yml` was part of the same change, because the policy is bound to a workflow filename.
+- **CI now has a single aggregating gate job, `ci`, and it is the only required status check.** `build` and `test` were required directly before, which couples the branch ruleset to the matrix: `test`'s check names carry the matrix values, so adding or dropping a platform broke protection. The gate declares `needs: [build, test]` with `if: always()` and fails on any upstream result that is not success — including `skipped`, which branch protection would otherwise read as satisfied.
+- **Every workflow declares `concurrency`, explicit `permissions`, and per-job `timeout-minutes`.** Superseded pushes cancel instead of stacking up, except on tags — a half-cancelled release can leave an incomplete package set on nuget.org. NuGet restore is cached on `~/.nuget/packages`.
+- **`.github/dependabot.yml` rewritten.** Minor and patch bumps are grouped into one PR per ecosystem; majors are deliberately left ungrouped so each arrives separately and stays open for review. The two runtime-aligned packages carrying per-TFM floors (`Microsoft.Extensions.DependencyInjection.Abstractions`, `Microsoft.Extensions.Http`) are now under `ignore` for major updates, because an 8.x → 10.x bump on the net8 floor is never mergeable and was weekly noise.
+
+### Added
+
+- **CodeQL code scanning** (`codeql.yml`), weekly plus on every push and PR, with the `security-and-quality` query pack. The build is explicit rather than `autobuild`, which has been observed to pick a single TFM and silently analyse half a multi-targeted codebase.
+- **Dependabot auto-merge for minor and patch bumps** (`dependabot-auto-merge.yml`), queued behind the `ci` gate. Majors are never auto-merged. Approval uses an `AUTO_MERGE_PAT` Dependabot secret owned by a code owner — an Actions secret of the same name resolves to an empty string in a Dependabot-triggered workflow, and a `GITHUB_TOKEN` approval cannot satisfy a code-owner review.
+
+None of the above changes the library, its public surface, or the package contents.
+
+---
+
 ## [0.3.1] — 2026-08-19
 
 ### Changed
