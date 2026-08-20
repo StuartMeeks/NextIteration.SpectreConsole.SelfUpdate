@@ -436,6 +436,3 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-
-# Local NuGet pack output (csproj writes to artifacts/packages on Release builds).
-artifacts/
