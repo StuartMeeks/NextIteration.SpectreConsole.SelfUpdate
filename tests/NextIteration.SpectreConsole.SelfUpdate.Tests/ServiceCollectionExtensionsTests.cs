@@ -131,7 +131,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
 
         private sealed class StubSource : IUpdateSource
         {
-            public Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct) =>
+            public Task<RemoteRelease?> GetLatestAsync(string? channel, bool? includePrereleasesOverride, CancellationToken ct) =>
                 Task.FromResult<RemoteRelease?>(null);
 
             public Task DownloadAssetAsync(ReleaseAsset asset, Stream destination, IProgress<DownloadProgress>? progress, CancellationToken ct) =>

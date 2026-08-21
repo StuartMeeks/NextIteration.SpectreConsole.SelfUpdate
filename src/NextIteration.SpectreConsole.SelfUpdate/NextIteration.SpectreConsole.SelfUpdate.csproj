@@ -11,7 +11,7 @@
 
 	<PropertyGroup>
 		<PackageId>NextIteration.SpectreConsole.SelfUpdate</PackageId>
-		<Version>0.3.1</Version>
+		<Version>1.0.0</Version>
 		<Description>Self-update for Spectre.Console CLIs: pluggable update sources (GitHub Releases over HTTP, GitHub Releases via gh CLI for private repos, generic HTTPS manifest, custom), SHA-256 verification, atomic file swap, and a drop-in `update` command.</Description>
 		<GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
 		<PackageOutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\packages</PackageOutputPath>
@@ -24,10 +24,10 @@
 		<PackageIcon>icon.png</PackageIcon>
 		<!--
 			Validate the public surface against the last shipped release, not just
-			framework compatibility: an accidental API break relative to 0.3.0
+			framework compatibility: an accidental API break relative to 0.3.1
 			fails the build instead of shipping.
 		-->
-		<PackageValidationBaselineVersion>0.3.0</PackageValidationBaselineVersion>
+		<PackageValidationBaselineVersion>0.3.1</PackageValidationBaselineVersion>
 	</PropertyGroup>
 
 	<ItemGroup>

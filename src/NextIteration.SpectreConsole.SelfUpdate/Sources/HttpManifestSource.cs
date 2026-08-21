@@ -95,16 +95,17 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
             string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
 
         /// <inheritdoc />
-        /// <remarks>
-        /// The single-release manifest does not expose a prerelease flag, so the
-        /// <c>includePrereleasesOverride</c> overload simply delegates here — the
-        /// manifest's own tag is always returned regardless of override.
-        /// </remarks>
-        public Task<RemoteRelease?> GetLatestAsync(string? channel, bool? includePrereleasesOverride, CancellationToken ct) =>
-            GetLatestAsync(channel, ct);
+        public Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct) =>
+            GetLatestAsync(channel, null, ct);
 
         /// <inheritdoc />
-        public async Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct)
+        /// <remarks>
+        /// A single-release manifest exposes no prerelease flag, so
+        /// <paramref name="includePrereleasesOverride"/> is deliberately ignored
+        /// here — the manifest's own tag is returned whatever the override says.
+        /// To serve prereleases separately, host one manifest per channel.
+        /// </remarks>
+        public async Task<RemoteRelease?> GetLatestAsync(string? channel, bool? includePrereleasesOverride, CancellationToken ct)
         {
             try
             {

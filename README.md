@@ -104,7 +104,11 @@ When `sha256` is populated, the default verifier picks it up via `ReleaseAsset.M
 ```csharp
 public sealed class MyArtifactRegistrySource : IUpdateSource
 {
-    public Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct) { /* ... */ }
+    // `includePrereleasesOverride` carries the `update --prerelease` flag:
+    // null defers to the configured option, true/false force it for this call.
+    // A source with no notion of a prerelease may ignore it — say so in its docs.
+    public Task<RemoteRelease?> GetLatestAsync(string? channel, bool? includePrereleasesOverride,
+                                               CancellationToken ct) { /* ... */ }
     public Task DownloadAssetAsync(ReleaseAsset asset, Stream destination,
                                    IProgress<DownloadProgress>? progress, CancellationToken ct) { /* ... */ }
 }

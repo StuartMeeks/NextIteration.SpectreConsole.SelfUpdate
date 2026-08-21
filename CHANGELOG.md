@@ -9,7 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.0.0] — 2026-08-21
+
+First stable release. The public surface is now covered by Semantic Versioning:
+a breaking change to it requires a 2.0.0.
+
+**Breaking, for implementers only.** `IUpdateSource`, `IUpdateChecker` and
+`ISelfUpdater` each carried an overload pair in which the *abstract* member was
+the one without the prerelease override, and the override-carrying member was a
+default interface implementation that discarded its argument and delegated to
+the abstract one. The consequence was silent: a custom `IUpdateSource` that
+implemented the abstract member — the only one it was obliged to implement —
+compiled cleanly, ran, and then ignored `update --prerelease` entirely.
+
+The relationship is now inverted. The override-carrying method is the abstract
+member; the no-override overload is the default implementation, and it passes
+`null`. An implementation can no longer drop the override without saying so,
+because there is nothing left to drop it in.
+
+- `IUpdateSource.GetLatestAsync(string?, bool?, CancellationToken)` is now abstract; `GetLatestAsync(string?, CancellationToken)` is the default overload.
+- `IUpdateChecker.CheckAsync(bool?, CancellationToken)` is now abstract; `CheckAsync(CancellationToken)` is the default overload.
+- `ISelfUpdater.GetLatestReleaseAsync(bool?, CancellationToken)` is now abstract; `GetLatestReleaseAsync(CancellationToken)` is the default overload.
+
+**Who is affected:** only code that *implements* one of these three interfaces.
+Code that merely *calls* them is unaffected — both overloads still exist with
+identical signatures, so every existing call site still compiles and binds the
+same way. Package validation therefore does **not** flag this: the API shape is
+unchanged and only which member carries the body moved, which it cannot see.
+The fix for an implementer is to add the `bool? includePrereleasesOverride`
+parameter to the method it already has, and honour it — or document that the
+source has no notion of a prerelease, as the built-in `HttpManifestSource` does.
+The three built-in sources and both built-in pipeline types already implemented
+the override-carrying method, so none of them changed behaviour.
+
 ### Changed
+
+- **The prerelease-override overloads were inverted on all three interfaces** — see the breaking-change note above. A regression test (`InterfaceDefaultsTests`) implements each interface with *only* its abstract member and asserts the override reaches it, so if the abstract member ever moves back to the no-override overload the test project stops compiling.
 
 - **Adopted the revised canonical `.editorconfig` and enabled `EnforceCodeStyleInBuild`** (NextIteration.Standards §5.2, §1.2.1 — the latter now a `MUST`). The canonical file is a deliberate allow-list of gated style rules rather than a blanket `dotnet_analyzer_diagnostic.severity`, so a style rule a future SDK ships never auto-gates the build. With the flag on, the gated rules fail the build under `TreatWarningsAsErrors` instead of merely showing in the IDE. Bringing the code green was a mechanical, behaviour-preserving reformat of 92 sites — braces on all single-statement `if`s (IDE0011, 64 of them), collection expressions (IDE0300/IDE0301/IDE0028), `var` usage, two expression-bodied members, one simplified null check, and five unnecessary usings — applied with `dotnet format` plus the collection-expression sites it cannot fix automatically. All 392 tests (196 × `net8.0`/`net10.0`) pass unchanged, and the build stays at zero warnings.
 - **`Path.Combine` → `Path.Join` repo-wide** (134 call sites, `src` and `tests`). `Path.Combine` returns its *last rooted argument* and silently discards everything before it, so a rooted second segment escapes the directory the first argument names. `Path.Join` always concatenates. Nothing here was reachable with a rooted segment — `ValidateAssetName` already rejects rooted and separator-bearing asset names before any path is built — so this is defence in depth on the install-directory path construction rather than a fix for a live defect. Verified behaviour-preserving: all 392 tests pass unchanged.
@@ -224,6 +261,8 @@ Initial commit. Never published to nuget.org — superseded by 0.1.1 before the 
 - Full XML documentation on the public surface, `TreatWarningsAsErrors=true`, `AnalysisLevel=latest`.
 - SourceLink, deterministic builds, published symbol packages.
 
+[Unreleased]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v1.0.0
 [0.3.1]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.3.1
 [0.3.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.3.0
 [0.2.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.2.0
