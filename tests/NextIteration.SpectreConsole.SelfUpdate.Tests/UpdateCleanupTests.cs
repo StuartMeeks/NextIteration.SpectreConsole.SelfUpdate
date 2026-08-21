@@ -15,7 +15,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         public void Run_when_no_pending_cleanup_writes_nothing_and_cleans()
         {
             var installer = new StubUpdateInstaller { HasPendingCleanup = false };
-            var console = new TestConsole();
+            using var console = new TestConsole();
 
             UpdateCleanup.Run(installer, console);
 
@@ -27,7 +27,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         public void Run_when_pending_cleanup_renders_message_and_cleans()
         {
             var installer = new StubUpdateInstaller { HasPendingCleanup = true };
-            var console = new TestConsole();
+            using var console = new TestConsole();
 
             UpdateCleanup.Run(installer, console);
 
@@ -39,7 +39,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         public void Run_via_service_provider_resolves_installer_and_console()
         {
             var installer = new StubUpdateInstaller { HasPendingCleanup = true };
-            var console = new TestConsole();
+            using var console = new TestConsole();
             var services = new ServiceCollection();
             services.AddSingleton<IUpdateInstaller>(installer);
             services.AddSingleton<IAnsiConsole>(console);
@@ -55,7 +55,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         public void Run_with_null_services_throws() => Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run((IServiceProvider)null!));
 
         [Fact]
-        public void Run_with_null_installer_throws() => Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run((IUpdateInstaller)null!, new TestConsole()));
+        public void Run_with_null_installer_throws()
+        {
+            using var console = new TestConsole();
+            Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run((IUpdateInstaller)null!, console));
+        }
 
         [Fact]
         public void Run_with_null_console_throws() => Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run(new StubUpdateInstaller(), null!));

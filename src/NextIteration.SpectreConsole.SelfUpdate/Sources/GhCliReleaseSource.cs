@@ -159,7 +159,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
                     $"GhCliReleaseSource cannot download '{asset.Name}': release tag is not present in asset metadata.");
             }
 
-            var tempFile = Path.Combine(Path.GetTempPath(), $"selfupdate-gh-{Guid.NewGuid():N}-{asset.Name}");
+            var tempFile = Path.Join(Path.GetTempPath(), $"selfupdate-gh-{Guid.NewGuid():N}-{asset.Name}");
             try
             {
                 progress?.Report(new DownloadProgress(0, asset.SizeBytes));

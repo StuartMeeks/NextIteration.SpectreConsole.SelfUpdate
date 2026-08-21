@@ -43,15 +43,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Resolution
             ArgumentNullException.ThrowIfNull(release);
             ArgumentException.ThrowIfNullOrWhiteSpace(runtimeIdentifier);
 
-            foreach (var rid in CandidateRids(runtimeIdentifier))
-            {
-                var match = ResolveForRid(release, rid);
-                if (match is not null)
-                {
-                    return match;
-                }
-            }
-            return null;
+            // Select is lazy and FirstOrDefault short-circuits, so a later
+            // candidate RID is only resolved when the earlier ones miss.
+            return CandidateRids(runtimeIdentifier)
+                .Select(rid => ResolveForRid(release, rid))
+                .FirstOrDefault(match => match is not null);
         }
 
         private ReleaseAsset? ResolveForRid(RemoteRelease release, string rid)
@@ -108,60 +104,27 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Resolution
 
         private static ReleaseAsset? MatchExact(RemoteRelease release, string stem)
         {
-            foreach (var asset in release.Assets)
-            {
-                foreach (var ext in ArchiveExtensions)
-                {
-                    if (NameEquals(asset.Name, stem + ext))
-                    {
-                        return asset;
-                    }
-                }
-            }
-            return null;
+            return release.Assets.FirstOrDefault(
+                asset => ArchiveExtensions.Any(ext => NameEquals(asset.Name, stem + ext)));
         }
 
         private static ReleaseAsset? MatchPrefixSuffix(RemoteRelease release, string prefix, string ridSuffix)
         {
-            foreach (var asset in release.Assets)
-            {
-                if (!asset.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                if (!EndsWithRidAndArchive(asset.Name, ridSuffix))
-                {
-                    continue;
-                }
-
-                return asset;
-            }
-            return null;
+            return release.Assets.FirstOrDefault(
+                asset => asset.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                    && EndsWithRidAndArchive(asset.Name, ridSuffix));
         }
 
         private static ReleaseAsset? MatchSuffixOnly(RemoteRelease release, string ridSuffix)
         {
-            foreach (var asset in release.Assets)
-            {
-                if (EndsWithRidAndArchive(asset.Name, ridSuffix))
-                {
-                    return asset;
-                }
-            }
-            return null;
+            return release.Assets.FirstOrDefault(
+                asset => EndsWithRidAndArchive(asset.Name, ridSuffix));
         }
 
         private static bool EndsWithRidAndArchive(string name, string ridSuffix)
         {
-            foreach (var ext in ArchiveExtensions)
-            {
-                if (name.EndsWith(ridSuffix + ext, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
+            return ArchiveExtensions.Any(
+                ext => name.EndsWith(ridSuffix + ext, StringComparison.OrdinalIgnoreCase));
         }
 
         private static bool NameEquals(string actual, string expected) =>
