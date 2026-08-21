@@ -203,10 +203,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Sources
         }
 
         [Fact]
-        public void Constructor_rejects_blank_repository()
-        {
-            Assert.Throws<ArgumentException>(() => new GhCliReleaseSource("   ", includePrereleases: false));
-        }
+        public void Constructor_rejects_blank_repository() => Assert.Throws<ArgumentException>(() => new GhCliReleaseSource("   ", includePrereleases: false));
 
         // ---------- Test runner ----------
 
@@ -218,7 +215,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Sources
         /// </summary>
         private sealed class RecordingRunner
         {
-            public List<IReadOnlyList<string>> Invocations { get; } = new();
+            public List<IReadOnlyList<string>> Invocations { get; } = [];
             public Action<IReadOnlyList<string>>? BeforeReturn { get; set; }
 
             private readonly Queue<string> _queuedStdout = new();
@@ -231,7 +228,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Sources
 
             public Task<string> RunAsync(IReadOnlyList<string> args, TimeSpan _, CancellationToken __)
             {
-                Invocations.Add(args.ToArray());
+                Invocations.Add([.. args]);
                 BeforeReturn?.Invoke(args);
                 return Task.FromResult(_queuedStdout.Count > 0 ? _queuedStdout.Dequeue() : string.Empty);
             }

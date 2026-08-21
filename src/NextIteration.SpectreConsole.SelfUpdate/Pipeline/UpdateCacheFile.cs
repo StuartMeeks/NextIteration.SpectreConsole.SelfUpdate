@@ -22,7 +22,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         {
             try
             {
-                if (!File.Exists(path)) return null;
+                if (!File.Exists(path))
+                {
+                    return null;
+                }
+
                 var json = File.ReadAllText(path);
                 return JsonSerializer.Deserialize<UpdateCacheEntry>(json, JsonOpts);
             }

@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -27,13 +26,13 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Verification
     public sealed class Sha256ChecksumVerifier : IPackageVerifier
     {
         private static readonly string[] ManifestNames =
-        {
+        [
             "SHA256SUMS.txt",
             "SHA256SUMS",
             "sha256sums.txt",
             "sha256sums",
             "checksums.txt",
-        };
+        ];
 
         private readonly IUpdateSource _source;
 
@@ -57,15 +56,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Verification
             ArgumentNullException.ThrowIfNull(release);
             ArgumentNullException.ThrowIfNull(asset);
 
-            var expected = TryReadMetadataSha256(asset)
-                ?? await TryFetchManifestSha256Async(release, asset, ct).ConfigureAwait(false);
-
-            if (expected is null)
-            {
-                throw new UpdateException(
+            var expected = (TryReadMetadataSha256(asset)
+                ?? await TryFetchManifestSha256Async(release, asset, ct).ConfigureAwait(false)) ?? throw new UpdateException(
                     $"SHA-256 hash for '{asset.Name}' is not available. The asset's metadata does not include a 'sha256' entry, and no SHA256SUMS.txt asset was found on release '{release.Tag}'.");
-            }
-
             var actual = await ComputeSha256Async(downloadedFilePath, ct).ConfigureAwait(false);
             if (!string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase))
             {
@@ -89,7 +82,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Verification
         {
             var manifest = release.Assets.FirstOrDefault(a =>
                 ManifestNames.Contains(a.Name, StringComparer.OrdinalIgnoreCase));
-            if (manifest is null) return null;
+            if (manifest is null)
+            {
+                return null;
+            }
 
             using var ms = new MemoryStream();
             await _source.DownloadAssetAsync(manifest, ms, progress: null, ct).ConfigureAwait(false);

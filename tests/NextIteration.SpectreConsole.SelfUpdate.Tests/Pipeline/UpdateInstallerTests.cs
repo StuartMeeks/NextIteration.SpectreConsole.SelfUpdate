@@ -10,12 +10,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
 {
     public sealed class UpdateInstallerTests
     {
-        private static readonly string[] TwoEntryNames = { "a.txt", "subdir" };
-        private static readonly string[] OneEntryName = { "a.txt" };
-        private static readonly string[] PreserveAppsettingsDevelopment = { "appsettings.Development.json" };
-        private static readonly string[] PreserveAppsettingsJson = { "appsettings.json" };
-        private static readonly string[] PreserveDb = { "*.db" };
-        private static readonly string[] PreserveAppsettingsGlob = { "appsettings.*.json" };
+        private static readonly string[] TwoEntryNames = ["a.txt", "subdir"];
+        private static readonly string[] OneEntryName = ["a.txt"];
+        private static readonly string[] PreserveAppsettingsDevelopment = ["appsettings.Development.json"];
+        private static readonly string[] PreserveAppsettingsJson = ["appsettings.json"];
+        private static readonly string[] PreserveDb = ["*.db"];
+        private static readonly string[] PreserveAppsettingsGlob = ["appsettings.*.json"];
 
         [Fact]
         public async Task InstallAsync_swaps_files_into_install_directory()
@@ -65,10 +65,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 Tag: "v1.0.0",
                 Channel: null,
                 ReleaseNotesUrl: null,
-                Assets: new[]
-                {
+                Assets:
+                [
                     new ReleaseAsset("myapp-v1.0.0-osx-arm64.zip", new Uri("https://example.com/x"), 100, null, new Dictionary<string, string>()),
-                },
+                ],
                 PublishedAt: DateTimeOffset.UtcNow);
 
             var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-arm64");
@@ -242,7 +242,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             var stagingDir = Path.Combine(installDir, ".update", "v1.0.0");
             Directory.CreateDirectory(stagingDir);
             var sentinel = Path.Combine(stagingDir, "in-flight-asset.zip");
-            File.WriteAllBytes(sentinel, new byte[] { 1, 2, 3 });
+            File.WriteAllBytes(sentinel, [1, 2, 3]);
 
             // Hold the lock externally to simulate that other installer.
             var lockPath = Path.Combine(installDir, ".update.lock");
@@ -279,7 +279,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 Tag: "v1.0.0",
                 Channel: null,
                 ReleaseNotesUrl: null,
-                Assets: new[] { malicious },
+                Assets: [malicious],
                 PublishedAt: DateTimeOffset.UtcNow);
 
             // Use a resolver that always returns the malicious asset, bypassing
@@ -289,7 +289,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 new SelfUpdaterOptions { AppName = "myapp", UseDefaultSha256Verifier = false },
                 new FakeUpdateSource(),
                 new AlwaysReturnAssetResolver(malicious),
-                Array.Empty<IPackageVerifier>(),
+                [],
                 ridResolver: () => "linux-x64",
                 installDirResolver: () => installDir);
 
@@ -302,7 +302,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         private sealed class AlwaysReturnAssetResolver : IAssetResolver
         {
             private readonly ReleaseAsset _asset;
-            public AlwaysReturnAssetResolver(ReleaseAsset asset) => _asset = asset;
+            public AlwaysReturnAssetResolver(ReleaseAsset asset)
+            {
+                _asset = asset;
+            }
+
             public ReleaseAsset? Resolve(RemoteRelease release, string runtimeIdentifier) => _asset;
         }
 
@@ -315,30 +319,22 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         [InlineData("foo\\bar.zip")]
         [InlineData("")]
         [InlineData("   ")]
-        public void ValidateAssetName_rejects_dangerous_names(string name)
-        {
-            Assert.Throws<UpdateException>(() => UpdateInstaller.ValidateAssetName(name));
-        }
+        public void ValidateAssetName_rejects_dangerous_names(string name) => Assert.Throws<UpdateException>(() => UpdateInstaller.ValidateAssetName(name));
 
         [Theory]
         [InlineData("/etc/passwd")]
         [InlineData("\\\\server\\share\\file.zip")]
-        public void ValidateAssetName_rejects_rooted_paths(string name)
-        {
+        public void ValidateAssetName_rejects_rooted_paths(string name) =>
             // Branched out from the above because IsPathRooted is platform-dependent
             // for Windows-style paths — both cases must throw on every platform.
             Assert.Throws<UpdateException>(() => UpdateInstaller.ValidateAssetName(name));
-        }
 
         [Theory]
         [InlineData("myapp-v1.0.0-linux-x64.zip")]
         [InlineData("myapp-osx-arm64.tar.gz")]
         [InlineData("file.with.many.dots.zip")]
         [InlineData("a")]
-        public void ValidateAssetName_accepts_valid_filenames(string name)
-        {
-            UpdateInstaller.ValidateAssetName(name);   // does not throw
-        }
+        public void ValidateAssetName_accepts_valid_filenames(string name) => UpdateInstaller.ValidateAssetName(name);   // does not throw
 
         [Fact]
         public void RestoreFromOld_moves_named_entries_back_into_install()
@@ -430,10 +426,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         }
 
         [Fact]
-        public void IsPreserved_with_empty_list_returns_false()
-        {
-            Assert.False(UpdateInstaller.IsPreserved("anything.txt", Array.Empty<string>()));
-        }
+        public void IsPreserved_with_empty_list_returns_false() => Assert.False(UpdateInstaller.IsPreserved("anything.txt", []));
 
         [Fact]
         public async Task SwapAsync_preserved_entry_is_not_moved_to_old()
@@ -600,15 +593,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 options,
                 source,
                 new DefaultAssetResolver("myapp"),
-                Array.Empty<IPackageVerifier>(),
+                [],
                 ridResolver: () => rid,
                 installDirResolver: () => installDir);
         }
 
-        private static RemoteRelease BuildReleaseWithSingleAssetZip(string tag, string assetName, params (string Name, string Content)[] inner)
-        {
-            return BuildReleaseWithSingleAssetZip(tag, assetName, inner.FirstOrDefault(), inner.Skip(1).FirstOrDefault());
-        }
+        private static RemoteRelease BuildReleaseWithSingleAssetZip(string tag, string assetName, params (string Name, string Content)[] inner) => BuildReleaseWithSingleAssetZip(tag, assetName, inner.FirstOrDefault(), inner.Skip(1).FirstOrDefault());
 
         private static RemoteRelease BuildReleaseWithSingleAssetZip(
             string tag, string assetName, (string Name, string Content) inner, (string Name, string Content) inner2)
@@ -623,7 +613,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 Tag: tag,
                 Channel: null,
                 ReleaseNotesUrl: null,
-                Assets: new[] { asset },
+                Assets: [asset],
                 PublishedAt: DateTimeOffset.UtcNow);
         }
 

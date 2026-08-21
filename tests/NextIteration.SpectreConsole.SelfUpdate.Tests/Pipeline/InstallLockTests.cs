@@ -65,7 +65,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             // direct equivalent and Acquire creates the file with FileMode.CreateNew,
             // which Windows still permits inside a read-only folder for the owning
             // user). Skip this test on Windows; Linux/macOS coverage is enough.
-            if (OperatingSystem.IsWindows()) return;
+            if (OperatingSystem.IsWindows())
+            {
+                return;
+            }
 
             using var dir = new TempDir();
             var sub = Path.Combine(dir.Path, "ro");

@@ -37,7 +37,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
         {
             private readonly IServiceProvider _provider;
 
-            public TestResolver(IServiceProvider provider) => _provider = provider;
+            public TestResolver(IServiceProvider provider)
+            {
+                _provider = provider;
+            }
 
             public object? Resolve(Type? type) => type is null ? null : _provider.GetService(type);
         }

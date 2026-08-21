@@ -51,12 +51,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 
         public async Task InstallAsync(IProgress<UpdateProgressEvent>? progress = null, CancellationToken ct = default)
         {
-            var release = await _source.GetLatestAsync(_options.Channel, ct).ConfigureAwait(false);
-            if (release is null)
-            {
-                throw new UpdateException(
+            var release = await _source.GetLatestAsync(_options.Channel, ct).ConfigureAwait(false)
+                ?? throw new UpdateException(
                     "No release is available from the configured update source. The source either returned null or is currently unreachable.");
-            }
             await _installer.InstallAsync(release, progress, onConflict: null, ct).ConfigureAwait(false);
         }
     }

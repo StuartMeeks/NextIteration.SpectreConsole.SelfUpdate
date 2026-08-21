@@ -71,7 +71,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             var opts = new SelfUpdaterOptions { AppName = "myapp", CacheDirectory = dir.Path, SkipVersionPredicate = null, CacheTtl = TimeSpan.FromMinutes(5) };
             var source = new FakeUpdateSource { LatestForChannel = TestRelease("v1.0.5") };
             var anchor = new DateTimeOffset(2026, 5, 1, 12, 0, 0, TimeSpan.Zero);
-            DateTimeOffset now = anchor;
+            var now = anchor;
             var checker = NewChecker(opts, source, "1.0.0", utcNow: () => now);
 
             await checker.CheckAsync(TestContext.Current.CancellationToken);
@@ -168,7 +168,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             new(tag,
                 Channel: null,
                 ReleaseNotesUrl: new Uri("https://example.com/releases/" + tag),
-                Assets: Array.Empty<ReleaseAsset>(),
+                Assets: [],
                 PublishedAt: DateTimeOffset.UtcNow);
     }
 }

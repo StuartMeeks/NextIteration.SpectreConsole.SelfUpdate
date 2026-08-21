@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -102,7 +101,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
                 }
 
                 var releases = await GetJsonAsync<GitHubReleaseDto[]>(http, $"repos/{_repository}/releases?per_page=30", ct).ConfigureAwait(false);
-                if (releases is null || releases.Length == 0) return null;
+                if (releases is null || releases.Length == 0)
+                {
+                    return null;
+                }
 
                 var match = releases
                     .Where(r => !r.Draft)
@@ -171,7 +173,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
 
         private string? ResolveToken()
         {
-            if (!string.IsNullOrWhiteSpace(_explicitToken)) return _explicitToken;
+            if (!string.IsNullOrWhiteSpace(_explicitToken))
+            {
+                return _explicitToken;
+            }
+
             return Environment.GetEnvironmentVariable("GITHUB_TOKEN")
                 ?? Environment.GetEnvironmentVariable("GH_TOKEN");
         }
@@ -180,7 +186,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
         {
             var url = new Uri(_apiBase, relativePath);
             using var resp = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-            if (resp.StatusCode == System.Net.HttpStatusCode.NotFound) return default;
+            if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return default;
+            }
+
             resp.EnsureSuccessStatusCode();
             await using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
             return await JsonSerializer.DeserializeAsync<T>(stream, JsonOpts, ct).ConfigureAwait(false);
@@ -188,9 +198,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
 
         private static RemoteRelease? Convert(GitHubReleaseDto dto, string? channel)
         {
-            if (string.IsNullOrWhiteSpace(dto.TagName)) return null;
+            if (string.IsNullOrWhiteSpace(dto.TagName))
+            {
+                return null;
+            }
 
-            var assets = (dto.Assets ?? Array.Empty<GitHubAssetDto>())
+            var assets = (dto.Assets ?? [])
                 .Where(a => !string.IsNullOrWhiteSpace(a.Name) && !string.IsNullOrWhiteSpace(a.Url))
                 .Select(a => new ReleaseAsset(
                     Name: a.Name!,
@@ -200,7 +213,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
                     Metadata: BuildAssetMetadata(a)))
                 .ToArray();
 
-            Uri? notes = string.IsNullOrWhiteSpace(dto.HtmlUrl) ? null : new Uri(dto.HtmlUrl);
+            var notes = string.IsNullOrWhiteSpace(dto.HtmlUrl) ? null : new Uri(dto.HtmlUrl);
 
             // Sources should report channel based on what they observed —
             // forward the caller's channel filter as the resolved channel

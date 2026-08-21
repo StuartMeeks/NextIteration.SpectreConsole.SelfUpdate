@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -86,12 +85,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
                 if (channel is null && !includePrereleases)
                 {
                     var stdout = await _runner(
-                        new[]
-                        {
+                        [
                             "release", "view",
                             "--json", "tagName,name,url,publishedAt,isDraft,isPrerelease,assets",
                             "--repo", _repository,
-                        },
+                        ],
                         DefaultViewTimeout,
                         ct).ConfigureAwait(false);
                     var dto = JsonSerializer.Deserialize<GhReleaseDto>(stdout, JsonOpts);
@@ -104,16 +102,15 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
                 // status. Only request fields used for filtering / sort here;
                 // the full detail (incl. url, assets) is fetched per-tag below.
                 var listJson = await _runner(
-                    new[]
-                    {
+                    [
                         "release", "list",
                         "--json", "tagName,publishedAt,isDraft,isPrerelease",
                         "--limit", "30",
                         "--repo", _repository,
-                    },
+                    ],
                     DefaultListTimeout,
                     ct).ConfigureAwait(false);
-                var releases = JsonSerializer.Deserialize<GhReleaseDto[]>(listJson, JsonOpts) ?? Array.Empty<GhReleaseDto>();
+                var releases = JsonSerializer.Deserialize<GhReleaseDto[]>(listJson, JsonOpts) ?? [];
                 var match = releases
                     .Where(r => !r.IsDraft)
                     .Where(r => includePrereleases || !r.IsPrerelease)
@@ -121,17 +118,19 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
                         || (r.TagName ?? string.Empty).Contains($"-{channel}", StringComparison.OrdinalIgnoreCase))
                     .OrderByDescending(r => r.PublishedAt)
                     .FirstOrDefault();
-                if (match is null) return null;
+                if (match is null)
+                {
+                    return null;
+                }
 
                 // `release list` doesn't return assets — fetch the matched
                 // release in detail so DownloadAssetAsync has something to act on.
                 var detailJson = await _runner(
-                    new[]
-                    {
+                    [
                         "release", "view", match.TagName!,
                         "--json", "tagName,name,url,publishedAt,isDraft,isPrerelease,assets",
                         "--repo", _repository,
-                    },
+                    ],
                     DefaultViewTimeout,
                     ct).ConfigureAwait(false);
                 var detail = JsonSerializer.Deserialize<GhReleaseDto>(detailJson, JsonOpts);
@@ -166,14 +165,13 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
                 progress?.Report(new DownloadProgress(0, asset.SizeBytes));
 
                 await _runner(
-                    new[]
-                    {
+                    [
                         "release", "download", tag,
                         "--repo", _repository,
                         "--pattern", asset.Name,
                         "--output", tempFile,
                         "--clobber",
-                    },
+                    ],
                     DefaultDownloadTimeout,
                     ct).ConfigureAwait(false);
 
@@ -192,7 +190,13 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
 
         private static void TryDelete(string path)
         {
-            try { if (File.Exists(path)) File.Delete(path); }
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
             catch
             {
                 // Best effort.
@@ -201,10 +205,13 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
 
         private static RemoteRelease? Convert(GhReleaseDto dto, string? channel)
         {
-            if (string.IsNullOrWhiteSpace(dto.TagName)) return null;
+            if (string.IsNullOrWhiteSpace(dto.TagName))
+            {
+                return null;
+            }
 
             var tag = dto.TagName!;
-            var assets = (dto.Assets ?? Array.Empty<GhAssetDto>())
+            var assets = (dto.Assets ?? [])
                 .Where(a => !string.IsNullOrWhiteSpace(a.Name))
                 .Select(a => new ReleaseAsset(
                     Name: a.Name!,
@@ -214,7 +221,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
                     Metadata: BuildAssetMetadata(tag)))
                 .ToArray();
 
-            Uri? notes = TryParseUri(dto.Url);
+            var notes = TryParseUri(dto.Url);
 
             var resolvedChannel = dto.IsPrerelease ? (channel ?? "prerelease") : channel;
 

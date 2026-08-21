@@ -1,5 +1,3 @@
-using System.Linq;
-
 namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 {
     /// <summary>
@@ -165,7 +163,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             await using var fileStream = File.Create(destinationPath);
             var downloadProgress = new Progress<DownloadProgress>(dp =>
             {
-                if (progress is null) return;
+                if (progress is null)
+                {
+                    return;
+                }
+
                 if (dp.TotalBytes is { } total && total > 0)
                 {
                     progress.Report(new UpdateProgressEvent(
@@ -193,7 +195,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         // don't need preserve-path or conflict-resolution semantics.
         // Equivalent to SwapAsync(..., preservePaths: empty, onConflict: null).
         internal static void Swap(string sourceDirectory, string installDirectory, string oldDirectory) =>
-            SwapAsync(sourceDirectory, installDirectory, oldDirectory, Array.Empty<string>(), onConflict: null, CancellationToken.None)
+            SwapAsync(sourceDirectory, installDirectory, oldDirectory, [], onConflict: null, CancellationToken.None)
                 .GetAwaiter().GetResult();
 
         internal static async Task SwapAsync(
@@ -220,8 +222,15 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 foreach (var entry in Directory.EnumerateFileSystemEntries(installDirectory))
                 {
                     var name = Path.GetFileName(entry);
-                    if (IsMaintenanceEntry(name)) continue;
-                    if (IsPreserved(name, preservePaths)) continue;
+                    if (IsMaintenanceEntry(name))
+                    {
+                        continue;
+                    }
+
+                    if (IsPreserved(name, preservePaths))
+                    {
+                        continue;
+                    }
 
                     var dest = Path.Combine(oldDirectory, name);
                     if (File.Exists(entry))
@@ -274,8 +283,15 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                             // rollback restores the right thing on failure.
                             var oldDest = Path.Combine(oldDirectory, name);
                             TryDeleteEntry(oldDest);
-                            if (File.Exists(dest)) File.Move(dest, oldDest);
-                            else if (Directory.Exists(dest)) Directory.Move(dest, oldDest);
+                            if (File.Exists(dest))
+                            {
+                                File.Move(dest, oldDest);
+                            }
+                            else if (Directory.Exists(dest))
+                            {
+                                Directory.Move(dest, oldDest);
+                            }
+
                             movedNames.Add(name);
                         }
                         // else: a new release introduces a path that the
@@ -325,17 +341,28 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 
         internal static bool IsPreserved(string name, IReadOnlyList<string> preservePaths)
         {
-            if (preservePaths.Count == 0) return false;
+            if (preservePaths.Count == 0)
+            {
+                return false;
+            }
+
             foreach (var pattern in preservePaths)
             {
-                if (string.IsNullOrWhiteSpace(pattern)) continue;
+                if (string.IsNullOrWhiteSpace(pattern))
+                {
+                    continue;
+                }
                 // Take the part of the pattern before the first slash —
                 // this lets `data/**`, `data/seed.json`, and bare `data`
                 // all match the top-level entry `data`. Nested-only
                 // preservation (e.g. preserve only `data/seed.json` but
                 // not the rest of `data/`) is out of scope for v0.1.x.
                 var head = TopLevelSegment(pattern);
-                if (head.Length == 0) continue;
+                if (head.Length == 0)
+                {
+                    continue;
+                }
+
                 if (System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(head, name, ignoreCase: true))
                 {
                     return true;
@@ -349,7 +376,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             ReadOnlySpan<char> span = pattern;
             for (var i = 0; i < span.Length; i++)
             {
-                if (span[i] == '/' || span[i] == '\\') return span[..i];
+                if (span[i] == '/' || span[i] == '\\')
+                {
+                    return span[..i];
+                }
             }
             return span;
         }
@@ -389,8 +419,14 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         {
             try
             {
-                if (File.Exists(path)) File.Delete(path);
-                else if (Directory.Exists(path)) DeleteDirectoryRobustly(path);
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+                else if (Directory.Exists(path))
+                {
+                    DeleteDirectoryRobustly(path);
+                }
             }
             catch
             {
@@ -417,7 +453,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             Action<string, bool>? deleter = null,
             Action<TimeSpan>? sleeper = null)
         {
-            if (!Directory.Exists(path)) return;
+            if (!Directory.Exists(path))
+            {
+                return;
+            }
 
             deleter ??= Directory.Delete;
             sleeper ??= Thread.Sleep;

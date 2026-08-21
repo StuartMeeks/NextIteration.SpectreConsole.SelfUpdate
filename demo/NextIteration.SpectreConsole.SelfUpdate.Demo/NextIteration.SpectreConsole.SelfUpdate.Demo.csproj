@@ -12,6 +12,16 @@
 			the test project (STANDARD.md 2.7).
 		-->
 		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+		<!--
+			IDE0005 (remove unnecessary usings) only runs in-build when
+			GenerateDocumentationFile is true, which the line above sets to
+			false. With EnforceCodeStyleInBuild on (STANDARD.md 1.2.1) it
+			hard-errors demanding the doc file be enabled instead. STANDARD.md
+			2.7 resolves this for test projects; the demo is the same shape —
+			not shipped, so not public surface — and needs the same opt-out.
+			IDE0005 still gates the shipping project, where the doc file is on.
+		-->
+		<NoWarn>$(NoWarn);IDE0005</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>

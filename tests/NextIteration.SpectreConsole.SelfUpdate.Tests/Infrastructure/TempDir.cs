@@ -19,7 +19,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
             Directory.CreateDirectory(Path);
         }
 
-        public string Combine(params string[] parts) => System.IO.Path.Combine(new[] { Path }.Concat(parts).ToArray());
+        public string Combine(params string[] parts) => System.IO.Path.Combine([Path, .. parts]);
 
         public void Dispose()
         {

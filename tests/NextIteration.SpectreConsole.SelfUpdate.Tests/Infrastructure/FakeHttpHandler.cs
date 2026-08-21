@@ -10,7 +10,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
     internal sealed class FakeHttpHandler : HttpMessageHandler
     {
         public Func<HttpRequestMessage, HttpResponseMessage>? Responder { get; set; }
-        public List<HttpRequestMessage> Requests { get; } = new();
+        public List<HttpRequestMessage> Requests { get; } = [];
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -38,7 +38,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
     internal sealed class FakeHttpClientFactory : IHttpClientFactory
     {
         private readonly HttpMessageHandler _handler;
-        public FakeHttpClientFactory(HttpMessageHandler handler) => _handler = handler;
+        public FakeHttpClientFactory(HttpMessageHandler handler)
+        {
+            _handler = handler;
+        }
+
         public HttpClient CreateClient(string name) => new(_handler, disposeHandler: false);
     }
 }

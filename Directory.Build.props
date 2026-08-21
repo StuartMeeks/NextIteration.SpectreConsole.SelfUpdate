@@ -1,15 +1,30 @@
 <Project>
+
   <!--
     STANDARD.md 1.2: every property that is identical across projects lives here
     rather than being restated per csproj. Fifteen copies is fifteen chances to
-    diverge, and that duplication is how these repos drifted apart. A csproj
-    carries only what is genuinely specific to it.
+    diverge, and the divergence is silent — nothing fails when one csproj quietly
+    disagrees with its sibling about DebugType.
+
+    A csproj carries only what is genuinely specific to it: PackageId, Version,
+    Description, PackageTags, TargetFrameworks, the package's own URLs, and any
+    real exception. A non-shipping project (tests, a demo) sets
+    GenerateDocumentationFile=false to opt back out — sample and fixture code has
+    no XML docs, and TreatWarningsAsErrors would otherwise fail the build over
+    every missing one.
+
+    EnforceCodeStyleInBuild is on (STANDARD.md 1.2.1). It runs the IDE analyzers
+    in-build, so the canonical .editorconfig (5.2) actually gates the house style
+    rather than merely documenting it. The blanket severity that once turned every
+    advisory preference into an error (490 in Auth) is gone; .editorconfig is now a
+    deliberate allow-list of named gates. See 1.2.1 for the per-rule decisions.
   -->
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <EnablePackageValidation>true</EnablePackageValidation>
     <IncludeSymbols>true</IncludeSymbols>
@@ -24,4 +39,5 @@
     <Authors>Stuart Meeks</Authors>
     <Company>Next Iteration</Company>
   </PropertyGroup>
+
 </Project>

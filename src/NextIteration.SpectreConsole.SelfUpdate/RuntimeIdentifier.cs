@@ -33,9 +33,21 @@ namespace NextIteration.SpectreConsole.SelfUpdate
 
         private static string OsToken()
         {
-            if (OperatingSystem.IsWindows()) return "win";
-            if (OperatingSystem.IsLinux()) return "linux";
-            if (OperatingSystem.IsMacOS()) return "osx";
+            if (OperatingSystem.IsWindows())
+            {
+                return "win";
+            }
+
+            if (OperatingSystem.IsLinux())
+            {
+                return "linux";
+            }
+
+            if (OperatingSystem.IsMacOS())
+            {
+                return "osx";
+            }
+
             throw new PlatformNotSupportedException(
                 $"Unsupported operating system: {RuntimeInformation.OSDescription}");
         }

@@ -50,11 +50,21 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 
         public async Task<UpdateInfo?> CheckAsync(bool? includePrereleasesOverride, CancellationToken ct = default)
         {
-            if (IsOptOutSet()) return null;
+            if (IsOptOutSet())
+            {
+                return null;
+            }
 
             var current = GetCurrentVersion();
-            if (current is null) return null;
-            if (IsVersionSkipped(current)) return null;
+            if (current is null)
+            {
+                return null;
+            }
+
+            if (IsVersionSkipped(current))
+            {
+                return null;
+            }
 
             var effectivePrerelease = includePrereleasesOverride ?? _options.IncludePrereleases;
             var cachePath = ResolveCacheFilePath();
@@ -70,7 +80,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 linked.CancelAfter(_options.CheckTimeout);
 
                 var release = await _source.GetLatestAsync(_options.Channel, includePrereleasesOverride, linked.Token).ConfigureAwait(false);
-                if (release is null) return null;
+                if (release is null)
+                {
+                    return null;
+                }
 
                 UpdateCacheFile.TryWrite(cachePath, new UpdateCacheEntry(
                     CheckedAt: _utcNow(),
@@ -94,7 +107,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         public string? GetCurrentVersion()
         {
             var v = _currentVersionResolver();
-            if (string.IsNullOrWhiteSpace(v)) return null;
+            if (string.IsNullOrWhiteSpace(v))
+            {
+                return null;
+            }
+
             return StripBuildMetadata(v);
         }
 
@@ -106,7 +123,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         internal bool IsOptOutSet()
         {
             var name = ResolveSkipEnvVarName();
-            if (string.IsNullOrWhiteSpace(name)) return false;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return false;
+            }
+
             return string.Equals(_envResolver(name), "1", StringComparison.Ordinal);
         }
 
@@ -132,12 +153,23 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 
         internal bool IsCacheFresh(UpdateCacheEntry? entry, bool effectivePrerelease)
         {
-            if (entry is null) return false;
-            if (!string.Equals(entry.Channel, _options.Channel, StringComparison.Ordinal)) return false;
+            if (entry is null)
+            {
+                return false;
+            }
+
+            if (!string.Equals(entry.Channel, _options.Channel, StringComparison.Ordinal))
+            {
+                return false;
+            }
             // Pre-0.1.4 cache entries have no IncludePrereleases field — they
             // were written before the override existed, so they always
             // reflect a non-prerelease answer.
-            if ((entry.IncludePrereleases ?? false) != effectivePrerelease) return false;
+            if ((entry.IncludePrereleases ?? false) != effectivePrerelease)
+            {
+                return false;
+            }
+
             return (_utcNow() - entry.CheckedAt) < _options.CacheTtl;
         }
 
@@ -159,8 +191,15 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 return false;
             }
 
-            if (lv > cv) return true;
-            if (lv < cv) return false;
+            if (lv > cv)
+            {
+                return true;
+            }
+
+            if (lv < cv)
+            {
+                return false;
+            }
 
             // Numeric versions equal — compare prereleases. Semver: a release
             // without a prerelease is newer than one with a prerelease at the
@@ -172,9 +211,20 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 
         internal static int ComparePrerelease(string? current, string? latest)
         {
-            if (current is null && latest is null) return 0;
-            if (current is null) return 1;   // no-prerelease > prerelease, so current is newer
-            if (latest is null) return -1;   // current has prerelease, latest does not → current is older
+            if (current is null && latest is null)
+            {
+                return 0;
+            }
+
+            if (current is null)
+            {
+                return 1;   // no-prerelease > prerelease, so current is newer
+            }
+
+            if (latest is null)
+            {
+                return -1;   // current has prerelease, latest does not → current is older
+            }
 
             // Semver §11: compare dot-separated identifiers left to right.
             // Numeric identifiers compare numerically; numeric is always lower
@@ -187,7 +237,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             for (var i = 0; i < shared; i++)
             {
                 var cmp = ComparePrereleaseIdentifier(cParts[i], lParts[i]);
-                if (cmp != 0) return cmp;
+                if (cmp != 0)
+                {
+                    return cmp;
+                }
             }
             return cParts.Length.CompareTo(lParts.Length);
         }
@@ -197,22 +250,42 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             var cNumeric = long.TryParse(current, out var cn);
             var lNumeric = long.TryParse(latest, out var ln);
 
-            if (cNumeric && lNumeric) return cn.CompareTo(ln);
-            if (cNumeric) return -1;   // numeric identifiers rank lower than alphanumeric
-            if (lNumeric) return 1;
+            if (cNumeric && lNumeric)
+            {
+                return cn.CompareTo(ln);
+            }
+
+            if (cNumeric)
+            {
+                return -1;   // numeric identifiers rank lower than alphanumeric
+            }
+
+            if (lNumeric)
+            {
+                return 1;
+            }
+
             return string.CompareOrdinal(current, latest);
         }
 
         internal static (string Numeric, string? Prerelease) SplitNumericPrerelease(string version)
         {
             var dash = version.IndexOf('-', StringComparison.Ordinal);
-            if (dash < 0) return (version, null);
+            if (dash < 0)
+            {
+                return (version, null);
+            }
+
             return (version[..dash], version[(dash + 1)..]);
         }
 
         internal static string StripLeadingV(string version)
         {
-            if (string.IsNullOrEmpty(version)) return string.Empty;
+            if (string.IsNullOrEmpty(version))
+            {
+                return string.Empty;
+            }
+
             return version[0] is 'v' or 'V' ? version[1..] : version;
         }
 
@@ -224,7 +297,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 
         internal static string ComputeDefaultSkipEnvVarName(string appName)
         {
-            if (string.IsNullOrWhiteSpace(appName)) return string.Empty;
+            if (string.IsNullOrWhiteSpace(appName))
+            {
+                return string.Empty;
+            }
+
             var sb = new StringBuilder(appName.Length + "_SKIP_UPDATE_CHECK".Length);
             foreach (var c in appName)
             {

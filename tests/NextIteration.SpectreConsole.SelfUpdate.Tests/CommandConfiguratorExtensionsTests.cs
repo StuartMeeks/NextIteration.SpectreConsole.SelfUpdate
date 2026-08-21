@@ -13,9 +13,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
 {
     public sealed class CommandConfiguratorExtensionsTests
     {
-        private static readonly string[] HelpArgs = { "--help" };
-        private static readonly string[] UpdateHelpArgs = { "update", "--help" };
-        private static readonly string[] OtaHelpArgs = { "ota", "--help" };
+        private static readonly string[] HelpArgs = ["--help"];
+        private static readonly string[] UpdateHelpArgs = ["update", "--help"];
+        private static readonly string[] OtaHelpArgs = ["ota", "--help"];
 
         [Fact]
         public async Task AddUpdateCommand_with_default_name_registers_update_command()

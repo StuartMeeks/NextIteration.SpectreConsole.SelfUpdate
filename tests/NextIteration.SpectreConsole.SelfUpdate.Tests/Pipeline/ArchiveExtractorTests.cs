@@ -43,7 +43,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         {
             using var dir = new TempDir();
             var rarPath = dir.Combine("archive.rar");
-            await File.WriteAllBytesAsync(rarPath, new byte[] { 0x52, 0x61, 0x72, 0x21 }, TestContext.Current.CancellationToken);
+            await File.WriteAllBytesAsync(rarPath, [0x52, 0x61, 0x72, 0x21], TestContext.Current.CancellationToken);
 
             var ex = await Assert.ThrowsAsync<UpdateException>(() =>
                 ArchiveExtractor.ExtractAsync(rarPath, dir.Combine("out"), CancellationToken.None));

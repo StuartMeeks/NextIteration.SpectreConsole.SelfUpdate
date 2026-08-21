@@ -68,7 +68,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate
             {
                 return;
             }
-            if (info is null || !info.IsUpdateAvailable) return;
+            if (info is null || !info.IsUpdateAvailable)
+            {
+                return;
+            }
 
             var ansi = console ?? AnsiConsole.Console;
             if (info.ReleaseUrl is not null)

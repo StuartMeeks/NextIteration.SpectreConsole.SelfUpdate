@@ -19,7 +19,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
     /// </summary>
     internal sealed class RecordingProgress<T> : IProgress<T>
     {
-        private readonly List<T> _reports = new();
+        private readonly List<T> _reports = [];
 
         /// <summary>Everything reported so far, as a point-in-time copy.</summary>
         public IReadOnlyList<T> Snapshot
@@ -28,7 +28,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
             {
                 lock (_reports)
                 {
-                    return _reports.ToArray();
+                    return [.. _reports];
                 }
             }
         }
