@@ -194,9 +194,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
             return Task.FromResult(keep ? UpdateConflictResolution.KeepExisting : UpdateConflictResolution.UseNew);
         }
 
+        // Defer to the same comparator the checker uses so behaviour is
+        // identical between the cached probe and this fresh one.
         private static bool IsUpdateAvailable(string current, string latestTag) =>
-            // Defer to the same comparator the checker uses so behaviour is
-            // identical between the cached probe and this fresh one.
             Pipeline.UpdateChecker.IsNewer(current, latestTag);
 
         private static string StageLabel(UpdateStage stage) => stage switch

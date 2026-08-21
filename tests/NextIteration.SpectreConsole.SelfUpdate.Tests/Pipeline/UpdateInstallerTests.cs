@@ -321,12 +321,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         [InlineData("   ")]
         public void ValidateAssetName_rejects_dangerous_names(string name) => Assert.Throws<UpdateException>(() => UpdateInstaller.ValidateAssetName(name));
 
+        // Branched out from the above because IsPathRooted is platform-dependent
+        // for Windows-style paths — both cases must throw on every platform.
         [Theory]
         [InlineData("/etc/passwd")]
         [InlineData("\\\\server\\share\\file.zip")]
         public void ValidateAssetName_rejects_rooted_paths(string name) =>
-            // Branched out from the above because IsPathRooted is platform-dependent
-            // for Windows-style paths — both cases must throw on every platform.
             Assert.Throws<UpdateException>(() => UpdateInstaller.ValidateAssetName(name));
 
         [Theory]
