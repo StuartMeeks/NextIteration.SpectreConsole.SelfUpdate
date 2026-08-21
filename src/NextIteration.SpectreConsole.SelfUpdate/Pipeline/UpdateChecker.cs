@@ -145,7 +145,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             var dir = !string.IsNullOrWhiteSpace(_options.CacheDirectory)
                 ? _options.CacheDirectory!
                 : DefaultCacheDirectory(_options.AppName);
-            return Path.Combine(dir, ".update-check.json");
+            return Path.Join(dir, ".update-check.json");
         }
 
         internal bool IsCacheFresh(UpdateCacheEntry? entry) =>
@@ -322,7 +322,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             else if (OperatingSystem.IsMacOS())
             {
                 var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                root = Path.Combine(home, "Library", "Caches");
+                root = Path.Join(home, "Library", "Caches");
             }
             else
             {
@@ -330,11 +330,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 if (string.IsNullOrWhiteSpace(xdg))
                 {
                     var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                    xdg = Path.Combine(home, ".cache");
+                    xdg = Path.Join(home, ".cache");
                 }
                 root = xdg;
             }
-            return Path.Combine(root, appName);
+            return Path.Join(root, appName);
         }
 
         // ---------- Helpers ----------

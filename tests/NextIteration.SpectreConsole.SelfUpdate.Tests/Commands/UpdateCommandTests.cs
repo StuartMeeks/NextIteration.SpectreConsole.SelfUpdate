@@ -257,6 +257,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
             configUpdater?.Invoke(updater);
             var installer = new StubUpdateInstaller();
             configInstaller?.Invoke(installer);
+            // Deliberately not `using`: this console escapes via the return
+            // value and its lifetime belongs to the caller, which reads
+            // console.Output after the harness method has returned.
             var console = new TestConsole();
 
             var registrar = new TestRegistrar(s =>

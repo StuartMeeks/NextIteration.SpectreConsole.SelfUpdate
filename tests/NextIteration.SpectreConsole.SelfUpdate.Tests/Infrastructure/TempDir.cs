@@ -15,11 +15,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
         public TempDir(string? prefix = null)
         {
             var name = (prefix ?? "selfupdate") + "-" + Guid.NewGuid().ToString("N");
-            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), name);
+            Path = System.IO.Path.Join(System.IO.Path.GetTempPath(), name);
             Directory.CreateDirectory(Path);
         }
 
-        public string Combine(params string[] parts) => System.IO.Path.Combine([Path, .. parts]);
+        public string Combine(params string[] parts) => System.IO.Path.Join([Path, .. parts]);
 
         public void Dispose()
         {

@@ -30,7 +30,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         {
             var info = new UpdateInfo("1.0.0", "v1.4.2", IsUpdateAvailable: true, ReleaseUrl: new Uri("https://example.com/r"));
             var task = Task.FromResult<UpdateInfo?>(info);
-            var console = new TestConsole();
+            using var console = new TestConsole();
 
             UpdateBanner.RenderIfAvailable(task, waitFor: TimeSpan.FromSeconds(1), console: console);
 
@@ -45,7 +45,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         {
             var info = new UpdateInfo("1.0.0", "v1.4.2", IsUpdateAvailable: true, ReleaseUrl: null);
             var task = Task.FromResult<UpdateInfo?>(info);
-            var console = new TestConsole();
+            using var console = new TestConsole();
 
             UpdateBanner.RenderIfAvailable(task, waitFor: TimeSpan.FromSeconds(1), console: console);
 
@@ -57,7 +57,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         public void RenderIfAvailable_when_info_is_null_writes_nothing()
         {
             var task = Task.FromResult<UpdateInfo?>(null);
-            var console = new TestConsole();
+            using var console = new TestConsole();
 
             UpdateBanner.RenderIfAvailable(task, waitFor: TimeSpan.FromSeconds(1), console: console);
 
@@ -69,7 +69,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         {
             var info = new UpdateInfo("1.4.2", "v1.4.2", IsUpdateAvailable: false, ReleaseUrl: null);
             var task = Task.FromResult<UpdateInfo?>(info);
-            var console = new TestConsole();
+            using var console = new TestConsole();
 
             UpdateBanner.RenderIfAvailable(task, waitFor: TimeSpan.FromSeconds(1), console: console);
 
@@ -80,7 +80,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         public void RenderIfAvailable_when_task_does_not_complete_in_time_writes_nothing()
         {
             var tcs = new TaskCompletionSource<UpdateInfo?>();
-            var console = new TestConsole();
+            using var console = new TestConsole();
 
             UpdateBanner.RenderIfAvailable(tcs.Task, waitFor: TimeSpan.FromMilliseconds(50), console: console);
 
@@ -95,7 +95,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         public void RenderIfAvailable_when_task_faulted_swallows_and_writes_nothing()
         {
             var task = Task.FromException<UpdateInfo?>(new InvalidOperationException("boom"));
-            var console = new TestConsole();
+            using var console = new TestConsole();
 
             UpdateBanner.RenderIfAvailable(task, waitFor: TimeSpan.FromSeconds(1), console: console);
 

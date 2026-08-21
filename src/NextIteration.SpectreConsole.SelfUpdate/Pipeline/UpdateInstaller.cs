@@ -61,8 +61,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             get
             {
                 var installDir = InstallDirectory;
-                return Directory.Exists(Path.Combine(installDir, OldDirName))
-                    || Directory.Exists(Path.Combine(installDir, StagingDirName));
+                return Directory.Exists(Path.Join(installDir, OldDirName))
+                    || Directory.Exists(Path.Join(installDir, StagingDirName));
             }
         }
 
@@ -84,9 +84,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             ValidateAssetName(asset.Name);
 
             var installDir = InstallDirectory;
-            var stagingDir = Path.Combine(installDir, StagingDirName, SanitizeTag(release.Tag));
-            var oldDir = Path.Combine(installDir, OldDirName);
-            var lockFile = Path.Combine(installDir, LockFileName);
+            var stagingDir = Path.Join(installDir, StagingDirName, SanitizeTag(release.Tag));
+            var oldDir = Path.Join(installDir, OldDirName);
+            var lockFile = Path.Join(installDir, LockFileName);
 
             // Acquire the lock BEFORE touching the staging tree. Otherwise a
             // second installer can wipe a first installer's in-flight staging
@@ -99,7 +99,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 
             try
             {
-                var archivePath = Path.Combine(stagingDir, asset.Name);
+                var archivePath = Path.Join(stagingDir, asset.Name);
 
                 using (var dlCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
@@ -117,7 +117,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 progress?.Report(new UpdateProgressEvent(UpdateStage.Verifying, 1));
 
                 progress?.Report(new UpdateProgressEvent(UpdateStage.Extracting, 0));
-                var extractedDir = Path.Combine(stagingDir, "extracted");
+                var extractedDir = Path.Join(stagingDir, "extracted");
                 await ArchiveExtractor.ExtractAsync(archivePath, extractedDir, ct).ConfigureAwait(false);
                 var sourceDir = ResolveSourceDirectory(extractedDir);
                 progress?.Report(new UpdateProgressEvent(UpdateStage.Extracting, 1));
@@ -130,7 +130,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             {
                 // Drop the whole .update/ tree, not just the leaf <tag>/, so
                 // we don't leave an empty parent behind on the install dir.
-                TryDeleteDirectory(Path.Combine(installDir, StagingDirName));
+                TryDeleteDirectory(Path.Join(installDir, StagingDirName));
             }
         }
 
@@ -143,8 +143,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             // for the OneDrive / antivirus / Windows Search case where
             // handles held at install time defeated the immediate cleanup;
             // by next startup those handles have had time to release.
-            TrySwallow(() => DeleteDirectoryRobustly(Path.Combine(installDir, OldDirName)));
-            TrySwallow(() => DeleteDirectoryRobustly(Path.Combine(installDir, StagingDirName)));
+            TrySwallow(() => DeleteDirectoryRobustly(Path.Join(installDir, OldDirName)));
+            TrySwallow(() => DeleteDirectoryRobustly(Path.Join(installDir, StagingDirName)));
         }
 
         private static void TrySwallow(Action action)
@@ -232,7 +232,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                         continue;
                     }
 
-                    var dest = Path.Combine(oldDirectory, name);
+                    var dest = Path.Join(oldDirectory, name);
                     if (File.Exists(entry))
                     {
                         File.Move(entry, dest);
@@ -262,7 +262,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 {
                     ct.ThrowIfCancellationRequested();
                     var name = Path.GetFileName(entry);
-                    var dest = Path.Combine(installDirectory, name);
+                    var dest = Path.Join(installDirectory, name);
 
                     // Conflict path: source ships an entry whose top-level
                     // name matches a preserved pattern.
@@ -281,7 +281,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                             // moved in Phase 1; do it inline now so the
                             // copy below has somewhere clean to land and
                             // rollback restores the right thing on failure.
-                            var oldDest = Path.Combine(oldDirectory, name);
+                            var oldDest = Path.Join(oldDirectory, name);
                             TryDeleteEntry(oldDest);
                             if (File.Exists(dest))
                             {
@@ -314,7 +314,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             {
                 foreach (var name in copiedNames)
                 {
-                    TryDeleteEntry(Path.Combine(installDirectory, name));
+                    TryDeleteEntry(Path.Join(installDirectory, name));
                 }
                 RestoreFromOld(oldDirectory, installDirectory, movedNames);
                 throw;
@@ -346,29 +346,20 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 return false;
             }
 
-            foreach (var pattern in preservePaths)
-            {
-                if (string.IsNullOrWhiteSpace(pattern))
-                {
-                    continue;
-                }
-                // Take the part of the pattern before the first slash —
-                // this lets `data/**`, `data/seed.json`, and bare `data`
-                // all match the top-level entry `data`. Nested-only
-                // preservation (e.g. preserve only `data/seed.json` but
-                // not the rest of `data/`) is out of scope for v0.1.x.
-                var head = TopLevelSegment(pattern);
-                if (head.Length == 0)
-                {
-                    continue;
-                }
+            return preservePaths
+                .Where(pattern => !string.IsNullOrWhiteSpace(pattern))
+                .Any(pattern => MatchesTopLevelSegment(pattern, name));
+        }
 
-                if (System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(head, name, ignoreCase: true))
-                {
-                    return true;
-                }
-            }
-            return false;
+        // Take the part of the pattern before the first slash — this lets
+        // `data/**`, `data/seed.json`, and bare `data` all match the top-level
+        // entry `data`. Nested-only preservation (e.g. preserve only
+        // `data/seed.json` but not the rest of `data/`) is out of scope.
+        private static bool MatchesTopLevelSegment(string pattern, string name)
+        {
+            var head = TopLevelSegment(pattern);
+            return head.Length != 0
+                && System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(head, name, ignoreCase: true);
         }
 
         private static ReadOnlySpan<char> TopLevelSegment(string pattern)
@@ -393,8 +384,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         {
             foreach (var name in names)
             {
-                var src = Path.Combine(oldDirectory, name);
-                var dest = Path.Combine(installDirectory, name);
+                var src = Path.Join(oldDirectory, name);
+                var dest = Path.Join(installDirectory, name);
                 try
                 {
                     TryDeleteEntry(dest);
@@ -516,7 +507,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
             {
                 var relative = Path.GetRelativePath(source, file);
-                var target = Path.Combine(destination, relative);
+                var target = Path.Join(destination, relative);
                 Directory.CreateDirectory(Path.GetDirectoryName(target)!);
                 File.Copy(file, target, overwrite: true);
             }

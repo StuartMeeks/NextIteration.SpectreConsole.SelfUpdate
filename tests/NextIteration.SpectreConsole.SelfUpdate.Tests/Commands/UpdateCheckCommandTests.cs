@@ -127,6 +127,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
         {
             var checker = new StubUpdateChecker();
             configChecker(checker);
+            // Deliberately not `using`: this console escapes via the return
+            // value and its lifetime belongs to the caller, which reads
+            // console.Output after the harness method has returned.
             var console = new TestConsole();
 
             var registrar = new TestRegistrar(s =>
