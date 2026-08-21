@@ -138,7 +138,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// the consumer wouldn't want to lose across an upgrade.
         /// </para>
         /// </summary>
-        public IReadOnlyList<string> PreservePaths { get; set; } = Array.Empty<string>();
+        public IReadOnlyList<string> PreservePaths { get; set; } = [];
 
         // ---------- Source registration ----------
 
@@ -258,10 +258,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// built-in SHA-256 check entirely.
         /// </summary>
         public void AddVerifier<TVerifier>()
-            where TVerifier : class, IPackageVerifier
-        {
-            ExtraVerifierTypes.Add(typeof(TVerifier));
-        }
+            where TVerifier : class, IPackageVerifier => ExtraVerifierTypes.Add(typeof(TVerifier));
 
         /// <summary>
         /// Add an additional <see cref="IPackageVerifier"/> built by the
@@ -289,8 +286,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         internal Func<IServiceProvider, IAssetResolver>? AssetResolverFactory { get; private set; }
         internal Func<RemoteRelease, string, ReleaseAsset?>? AssetResolverFunc { get; private set; }
 
-        internal List<Type> ExtraVerifierTypes { get; } = new();
-        internal List<Func<IServiceProvider, IPackageVerifier>> ExtraVerifierFactories { get; } = new();
+        internal List<Type> ExtraVerifierTypes { get; } = [];
+        internal List<Func<IServiceProvider, IPackageVerifier>> ExtraVerifierFactories { get; } = [];
     }
 
     internal enum UpdateSourceKind

@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -111,11 +110,17 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
             {
                 using var http = _httpClientFactory.CreateClient();
                 using var resp = await http.GetAsync(_manifestUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-                if (!resp.IsSuccessStatusCode) return null;
+                if (!resp.IsSuccessStatusCode)
+                {
+                    return null;
+                }
 
                 await using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
                 var dto = await JsonSerializer.DeserializeAsync<ManifestDto>(stream, JsonOpts, ct).ConfigureAwait(false);
-                if (dto is null || string.IsNullOrWhiteSpace(dto.Tag)) return null;
+                if (dto is null || string.IsNullOrWhiteSpace(dto.Tag))
+                {
+                    return null;
+                }
 
                 if (channel is not null
                     && !string.IsNullOrWhiteSpace(dto.Channel)
@@ -170,7 +175,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
 
         private static RemoteRelease Convert(ManifestDto dto, string? channel)
         {
-            var assets = (dto.Assets ?? Array.Empty<ManifestAssetDto>())
+            var assets = (dto.Assets ?? [])
                 .Where(a => !string.IsNullOrWhiteSpace(a.Name) && !string.IsNullOrWhiteSpace(a.Url))
                 .Select(a => new ReleaseAsset(
                     Name: a.Name!,
@@ -180,7 +185,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
                     Metadata: BuildMetadata(a)))
                 .ToArray();
 
-            Uri? notes = string.IsNullOrWhiteSpace(dto.ReleaseNotesUrl)
+            var notes = string.IsNullOrWhiteSpace(dto.ReleaseNotesUrl)
                 ? null
                 : new Uri(dto.ReleaseNotesUrl!, UriKind.Absolute);
 

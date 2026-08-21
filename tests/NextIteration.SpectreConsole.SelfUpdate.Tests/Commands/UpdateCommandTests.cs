@@ -19,14 +19,14 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
             Tag: "v1.4.2",
             Channel: null,
             ReleaseNotesUrl: new Uri("https://example.com/r/v1.4.2"),
-            Assets: Array.Empty<ReleaseAsset>(),
+            Assets: [],
             PublishedAt: DateTimeOffset.UtcNow);
 
         private static readonly RemoteRelease ReleaseV100 = new(
             Tag: "v1.0.0",
             Channel: null,
             ReleaseNotesUrl: null,
-            Assets: Array.Empty<ReleaseAsset>(),
+            Assets: [],
             PublishedAt: DateTimeOffset.UtcNow);
 
         [Fact]

@@ -107,9 +107,6 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Verification
         }
 
         [Fact]
-        public void Parse_throws_on_null_input()
-        {
-            Assert.Throws<ArgumentNullException>(() => Sha256SumsManifest.Parse(null!));
-        }
+        public void Parse_throws_on_null_input() => Assert.Throws<ArgumentNullException>(() => Sha256SumsManifest.Parse(null!));
     }
 }

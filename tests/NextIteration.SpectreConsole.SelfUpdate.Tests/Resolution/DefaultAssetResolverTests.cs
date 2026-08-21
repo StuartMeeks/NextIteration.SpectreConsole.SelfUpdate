@@ -130,10 +130,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Resolution
         }
 
         [Fact]
-        public void Constructor_throws_on_blank_app_name()
-        {
-            Assert.Throws<ArgumentException>(() => new DefaultAssetResolver(""));
-        }
+        public void Constructor_throws_on_blank_app_name() => Assert.Throws<ArgumentException>(() => new DefaultAssetResolver(""));
 
         private static RemoteRelease ReleaseWith(string tag, params string[] assetNames)
         {

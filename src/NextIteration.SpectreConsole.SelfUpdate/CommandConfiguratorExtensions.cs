@@ -1,4 +1,5 @@
 using NextIteration.SpectreConsole.SelfUpdate.Commands;
+
 using Spectre.Console.Cli;
 
 namespace NextIteration.SpectreConsole.SelfUpdate

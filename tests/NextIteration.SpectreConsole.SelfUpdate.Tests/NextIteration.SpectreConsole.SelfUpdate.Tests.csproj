@@ -21,8 +21,14 @@
 
 			CA2007 (ConfigureAwait) doesn't apply in test contexts; there
 			is no SynchronizationContext to recapture.
+
+			IDE0005 (remove unnecessary usings) only runs in-build when
+			GenerateDocumentationFile is true, which this project sets to
+			false. With EnforceCodeStyleInBuild on it would hard-error
+			demanding the doc file be enabled. It still gates the shipping
+			project, where the doc file is on. STANDARD.md 2.7.
 		-->
-		<NoWarn>$(NoWarn);CA1707;CA1515;CA2007</NoWarn>
+		<NoWarn>$(NoWarn);CA1707;CA1515;CA2007;IDE0005</NoWarn>
 	</PropertyGroup>
 
 	<!--

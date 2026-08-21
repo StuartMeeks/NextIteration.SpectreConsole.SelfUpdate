@@ -23,7 +23,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Resolution
     /// </remarks>
     public sealed class DefaultAssetResolver : IAssetResolver
     {
-        private static readonly string[] ArchiveExtensions = { ".tar.gz", ".tgz", ".zip" };
+        private static readonly string[] ArchiveExtensions = [".tar.gz", ".tgz", ".zip"];
 
         private readonly string _appName;
 
@@ -46,7 +46,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Resolution
             foreach (var rid in CandidateRids(runtimeIdentifier))
             {
                 var match = ResolveForRid(release, rid);
-                if (match is not null) return match;
+                if (match is not null)
+                {
+                    return match;
+                }
             }
             return null;
         }
@@ -58,19 +61,31 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Resolution
 
             // 1. {app}-v{ver}-{rid}.ext
             var match = MatchExact(release, $"{_appName}-{versionWithV}-{rid}");
-            if (match is not null) return match;
+            if (match is not null)
+            {
+                return match;
+            }
 
             // 2. {app}-{ver}-{rid}.ext (in case tag is unprefixed)
             match = MatchExact(release, $"{_appName}-{versionNumeric}-{rid}");
-            if (match is not null) return match;
+            if (match is not null)
+            {
+                return match;
+            }
 
             // 3. {app}-{rid}.ext (no version segment)
             match = MatchExact(release, $"{_appName}-{rid}");
-            if (match is not null) return match;
+            if (match is not null)
+            {
+                return match;
+            }
 
             // 4. {app}…-{rid}.ext (loose: starts with app, ends with -rid+ext)
             match = MatchPrefixSuffix(release, $"{_appName}-", $"-{rid}");
-            if (match is not null) return match;
+            if (match is not null)
+            {
+                return match;
+            }
 
             // 5. *…-{rid}.ext (RID-only — last resort, may be ambiguous)
             match = MatchSuffixOnly(release, $"-{rid}");
@@ -97,7 +112,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Resolution
             {
                 foreach (var ext in ArchiveExtensions)
                 {
-                    if (NameEquals(asset.Name, stem + ext)) return asset;
+                    if (NameEquals(asset.Name, stem + ext))
+                    {
+                        return asset;
+                    }
                 }
             }
             return null;
@@ -107,8 +125,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Resolution
         {
             foreach (var asset in release.Assets)
             {
-                if (!asset.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
-                if (!EndsWithRidAndArchive(asset.Name, ridSuffix)) continue;
+                if (!asset.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!EndsWithRidAndArchive(asset.Name, ridSuffix))
+                {
+                    continue;
+                }
+
                 return asset;
             }
             return null;
@@ -118,7 +144,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Resolution
         {
             foreach (var asset in release.Assets)
             {
-                if (EndsWithRidAndArchive(asset.Name, ridSuffix)) return asset;
+                if (EndsWithRidAndArchive(asset.Name, ridSuffix))
+                {
+                    return asset;
+                }
             }
             return null;
         }
@@ -127,7 +156,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Resolution
         {
             foreach (var ext in ArchiveExtensions)
             {
-                if (name.EndsWith(ridSuffix + ext, StringComparison.OrdinalIgnoreCase)) return true;
+                if (name.EndsWith(ridSuffix + ext, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
             }
             return false;
         }
@@ -137,7 +169,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Resolution
 
         private static string StripLeadingV(string tag)
         {
-            if (string.IsNullOrEmpty(tag)) return string.Empty;
+            if (string.IsNullOrEmpty(tag))
+            {
+                return string.Empty;
+            }
+
             return tag[0] is 'v' or 'V' ? tag[1..] : tag;
         }
     }

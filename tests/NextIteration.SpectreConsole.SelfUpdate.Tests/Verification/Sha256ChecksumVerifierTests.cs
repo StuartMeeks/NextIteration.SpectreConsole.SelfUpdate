@@ -20,7 +20,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Verification
 
             var sha = ComputeSha256Hex(bytes);
             var asset = MakeAsset("payload.bin", new Dictionary<string, string> { ["sha256"] = sha });
-            var release = MakeRelease(new[] { asset });
+            var release = MakeRelease([asset]);
 
             var verifier = new Sha256ChecksumVerifier(new FakeUpdateSource());
             await verifier.VerifyAsync(path, release, asset, CancellationToken.None);
@@ -31,13 +31,13 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Verification
         {
             using var dir = new TempDir();
             var path = dir.Combine("payload.bin");
-            await File.WriteAllBytesAsync(path, new byte[] { 1, 2, 3, 4 }, TestContext.Current.CancellationToken);
+            await File.WriteAllBytesAsync(path, [1, 2, 3, 4], TestContext.Current.CancellationToken);
 
             var asset = MakeAsset("payload.bin", new Dictionary<string, string>
             {
                 ["sha256"] = "deadbeef".PadRight(64, '0'),
             });
-            var release = MakeRelease(new[] { asset });
+            var release = MakeRelease([asset]);
 
             var verifier = new Sha256ChecksumVerifier(new FakeUpdateSource());
 
@@ -55,7 +55,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Verification
 
             var asset = MakeAsset("payload.bin", new Dictionary<string, string>());
             var manifestAsset = MakeAsset("SHA256SUMS.txt", new Dictionary<string, string>());
-            var release = MakeRelease(new[] { asset, manifestAsset });
+            var release = MakeRelease([asset, manifestAsset]);
 
             var sha = ComputeSha256Hex(bytes);
             var manifestText = $"{sha}  payload.bin\n";
@@ -77,10 +77,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Verification
         {
             using var dir = new TempDir();
             var path = dir.Combine("payload.bin");
-            await File.WriteAllBytesAsync(path, new byte[] { 1, 2, 3 }, TestContext.Current.CancellationToken);
+            await File.WriteAllBytesAsync(path, [1, 2, 3], TestContext.Current.CancellationToken);
 
             var asset = MakeAsset("payload.bin", new Dictionary<string, string>());
-            var release = MakeRelease(new[] { asset });   // no SHA256SUMS asset
+            var release = MakeRelease([asset]);   // no SHA256SUMS asset
 
             var verifier = new Sha256ChecksumVerifier(new FakeUpdateSource());
 
@@ -88,10 +88,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Verification
                 verifier.VerifyAsync(path, release, asset, CancellationToken.None));
         }
 
-        private static string ComputeSha256Hex(byte[] bytes)
-        {
-            return Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
-        }
+        private static string ComputeSha256Hex(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
 
         private static ReleaseAsset MakeAsset(string name, IReadOnlyDictionary<string, string> metadata) =>
             new(

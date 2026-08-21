@@ -52,21 +52,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         }
 
         [Fact]
-        public void Run_with_null_services_throws()
-        {
-            Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run((IServiceProvider)null!));
-        }
+        public void Run_with_null_services_throws() => Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run((IServiceProvider)null!));
 
         [Fact]
-        public void Run_with_null_installer_throws()
-        {
-            Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run((IUpdateInstaller)null!, new TestConsole()));
-        }
+        public void Run_with_null_installer_throws() => Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run((IUpdateInstaller)null!, new TestConsole()));
 
         [Fact]
-        public void Run_with_null_console_throws()
-        {
-            Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run(new StubUpdateInstaller(), null!));
-        }
+        public void Run_with_null_console_throws() => Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run(new StubUpdateInstaller(), null!));
     }
 }
