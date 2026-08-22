@@ -11,10 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.0] — 2026-08-22
+## [1.0.1] — 2026-08-22
 
 First stable release. The public surface is now covered by Semantic Versioning:
 a breaking change to it requires a 2.0.0.
+
+There is no 1.0.0 on nuget.org. It was prepared and merged but never tagged, so it
+was never published; the release went out as 1.0.1 instead. Nothing was released
+and then withdrawn, and no 1.0.0 package exists to upgrade from.
 
 **Breaking, for implementers only.** `IUpdateSource`, `IUpdateChecker` and
 `ISelfUpdater` each carried an overload pair in which the *abstract* member was
@@ -269,8 +273,8 @@ Initial commit. Never published to nuget.org — superseded by 0.1.1 before the 
 - Full XML documentation on the public surface, `TreatWarningsAsErrors=true`, `AnalysisLevel=latest`.
 - SourceLink, deterministic builds, published symbol packages.
 
-[Unreleased]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v1.0.0
+[Unreleased]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v1.0.1
 [0.3.1]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.3.1
 [0.3.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.3.0
 [0.2.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.2.0
