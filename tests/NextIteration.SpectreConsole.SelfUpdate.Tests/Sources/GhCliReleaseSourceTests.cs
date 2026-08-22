@@ -127,15 +127,31 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Sources
             Assert.Null(release);
         }
 
+        // GhProcess wraps every real `gh` failure — missing binary, non-zero
+        // exit, timeout — in GhProcessException, so that is what a transport
+        // failure looks like in production.
         [Fact]
-        public async Task GetLatestAsync_when_runner_throws_returns_null()
+        public async Task GetLatestAsync_when_runner_reports_transport_failure_returns_null()
         {
             var source = new GhCliReleaseSource(Repo, includePrereleases: false,
-                runner: (_, _, _) => throw new InvalidOperationException("gh missing"));
+                runner: (_, _, _) => throw new GhProcessException("gh missing"));
 
             var release = await source.GetLatestAsync(channel: null, CancellationToken.None);
 
             Assert.Null(release);
+        }
+
+        // The source swallows transport failures, not bugs. An exception the gh
+        // transport cannot produce propagates rather than being reported as
+        // "no release available", which would hide the defect indefinitely.
+        [Fact]
+        public async Task GetLatestAsync_when_runner_throws_unexpected_exception_propagates()
+        {
+            var source = new GhCliReleaseSource(Repo, includePrereleases: false,
+                runner: (_, _, _) => throw new InvalidOperationException("bug in a custom runner"));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => source.GetLatestAsync(channel: null, CancellationToken.None));
         }
 
         [Fact]

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Reflection;
 using System.Text;
 
@@ -98,8 +99,13 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             {
                 throw;
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is UpdateException or HttpRequestException
+                or IOException or JsonException or OperationCanceledException)
             {
+                // A source that is unreachable, slow or serving junk means "no
+                // upgrade information; try again next tick". Anything else is a
+                // bug and propagates rather than being silently reported as
+                // "up to date".
                 return null;
             }
         }

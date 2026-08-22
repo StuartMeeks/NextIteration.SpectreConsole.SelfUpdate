@@ -30,8 +30,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 var json = File.ReadAllText(path);
                 return JsonSerializer.Deserialize<UpdateCacheEntry>(json, JsonOpts);
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
             {
+                // A missing, unreadable or corrupt cache is not an error — the
+                // caller falls back to querying the source.
                 return null;
             }
         }
@@ -43,7 +45,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 File.WriteAllText(path, JsonSerializer.Serialize(entry, JsonOpts));
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
             {
                 // Cache-write failures are non-fatal — the source will be
                 // hit again on the next invocation.

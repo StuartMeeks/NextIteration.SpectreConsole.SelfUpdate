@@ -150,9 +150,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
         private static void TrySwallow(Action action)
         {
             try { action(); }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                // Non-fatal — will retry on next startup.
+                // Non-fatal — will retry on next startup. Only filesystem
+                // contention is swallowed; anything else is a bug and propagates.
             }
         }
 
@@ -398,7 +399,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                         Directory.Move(src, dest);
                     }
                 }
-                catch
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
                     // Best effort — partial-restore failures are surfaced
                     // implicitly through the pipeline exception.
@@ -419,7 +420,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                     DeleteDirectoryRobustly(path);
                 }
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 // Best effort.
             }
@@ -488,7 +489,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                     }
                 }
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 // Best effort — if we can't clear an attribute (e.g. the file
                 // is locked), the subsequent Delete will surface the real
@@ -565,7 +566,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             {
                 DeleteDirectoryRobustly(stagingDir);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 throw new UpdateException(
                     $"Unable to reset staging directory '{stagingDir}': {ex.Message}", ex);
@@ -579,7 +580,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             {
                 DeleteDirectoryRobustly(path);
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 // Best effort — staging is under .update/ which the next install or
                 // a subsequent CleanupOldInstall pass will eventually overwrite.

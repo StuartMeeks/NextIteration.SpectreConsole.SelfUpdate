@@ -30,7 +30,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure
                     Directory.Delete(Path, recursive: true);
                 }
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 // Best effort.
             }

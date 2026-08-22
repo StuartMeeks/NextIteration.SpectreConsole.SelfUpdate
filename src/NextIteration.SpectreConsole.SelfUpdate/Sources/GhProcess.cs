@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 
 namespace NextIteration.SpectreConsole.SelfUpdate.Sources
@@ -79,9 +80,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
         private static void TryKill(Process proc)
         {
             try { proc.Kill(entireProcessTree: true); }
-            catch
+            catch (Exception ex) when (ex is InvalidOperationException or Win32Exception or NotSupportedException)
             {
-                // Best effort — the process may already have exited.
+                // Best effort — the process may already have exited
+                // (InvalidOperationException) or refused the signal.
             }
         }
     }

@@ -11,8 +11,23 @@ using Xunit;
 
 namespace NextIteration.SpectreConsole.SelfUpdate.Tests
 {
-    public sealed class CommandConfiguratorExtensionsTests
+    public sealed class CommandConfiguratorExtensionsTests : IDisposable
     {
+        // The harness below hands its TestConsole to the caller, which reads
+        // console.Output after the harness method has returned — so the console
+        // cannot be disposed at its creation site. The fixture owns the lifetime
+        // instead and disposes every console it handed out when xUnit tears the
+        // class down.
+        private readonly List<TestConsole> _consoles = [];
+
+        public void Dispose()
+        {
+            foreach (var console in _consoles)
+            {
+                console.Dispose();
+            }
+        }
+
         private static readonly string[] HelpArgs = ["--help"];
         private static readonly string[] UpdateHelpArgs = ["update", "--help"];
         private static readonly string[] OtaHelpArgs = ["ota", "--help"];
@@ -84,12 +99,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
 
         // ---------- helpers ----------
 
-        private static (CommandApp App, TestConsole Console) BuildApp(Action<IConfigurator> configure)
+        private (CommandApp App, TestConsole Console) BuildApp(Action<IConfigurator> configure)
         {
-            // Deliberately not `using`: this console escapes via the return
-            // value and its lifetime belongs to the caller, which reads
-            // console.Output after the harness method has returned.
             var console = new TestConsole();
+            _consoles.Add(console);
             var registrar = new TestRegistrar(s =>
             {
                 s.AddSingleton<IAnsiConsole>(console);

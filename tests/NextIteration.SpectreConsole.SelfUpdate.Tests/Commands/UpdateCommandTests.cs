@@ -11,8 +11,23 @@ using Xunit;
 
 namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
 {
-    public sealed class UpdateCommandTests
+    public sealed class UpdateCommandTests : IDisposable
     {
+        // The harness below hands its TestConsole to the caller, which reads
+        // console.Output after the harness method has returned — so the console
+        // cannot be disposed at its creation site. The fixture owns the lifetime
+        // instead and disposes every console it handed out when xUnit tears the
+        // class down.
+        private readonly List<TestConsole> _consoles = [];
+
+        public void Dispose()
+        {
+            foreach (var console in _consoles)
+            {
+                console.Dispose();
+            }
+        }
+
         private delegate Task<int> Runner(params string[] args);
 
         private static readonly RemoteRelease ReleaseV142 = new(
@@ -246,7 +261,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
 
         // ---------- helpers ----------
 
-        private static (Runner Run, TestConsole Console, StubSelfUpdater Updater) BuildHarness(
+        private (Runner Run, TestConsole Console, StubSelfUpdater Updater) BuildHarness(
             Action<StubUpdateChecker>? configChecker = null,
             Action<StubSelfUpdater>? configUpdater = null,
             Action<StubUpdateInstaller>? configInstaller = null)
@@ -257,10 +272,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
             configUpdater?.Invoke(updater);
             var installer = new StubUpdateInstaller();
             configInstaller?.Invoke(installer);
-            // Deliberately not `using`: this console escapes via the return
-            // value and its lifetime belongs to the caller, which reads
-            // console.Output after the harness method has returned.
             var console = new TestConsole();
+            _consoles.Add(console);
 
             var registrar = new TestRegistrar(s =>
             {
