@@ -24,10 +24,14 @@
 		<PackageIcon>icon.png</PackageIcon>
 		<!--
 			Validate the public surface against the last shipped release, not just
-			framework compatibility: an accidental API break relative to 0.3.1
+			framework compatibility: an accidental API break relative to 1.0.1
 			fails the build instead of shipping.
+
+			1.0.1 is the first stable release, so from here a break against this
+			baseline is a 2.0.0, not a judgement call. There is no 1.0.0 to
+			baseline against — it was never published (see CHANGELOG).
 		-->
-		<PackageValidationBaselineVersion>0.3.1</PackageValidationBaselineVersion>
+		<PackageValidationBaselineVersion>1.0.1</PackageValidationBaselineVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
