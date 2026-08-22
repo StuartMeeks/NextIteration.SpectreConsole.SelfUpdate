@@ -24,21 +24,29 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// displayed and installed versions are guaranteed to match (no
         /// TOCTOU window between display and install).
         /// </summary>
-        Task<RemoteRelease?> GetLatestReleaseAsync(CancellationToken ct = default);
+        /// <param name="includePrereleasesOverride">
+        /// <see langword="null"/> defers to the configured
+        /// <see cref="SelfUpdaterOptions.IncludePrereleases"/>;
+        /// <see langword="true"/>/<see langword="false"/> force inclusion or
+        /// exclusion for this call. Drives the <c>update --prerelease</c> CLI flag.
+        /// </param>
+        /// <param name="ct">Cancellation token.</param>
+        Task<RemoteRelease?> GetLatestReleaseAsync(bool? includePrereleasesOverride, CancellationToken ct = default);
 
         /// <summary>
-        /// Per-invocation variant of
-        /// <see cref="GetLatestReleaseAsync(CancellationToken)"/> that lets the
-        /// caller override <see cref="SelfUpdaterOptions.IncludePrereleases"/>
-        /// for one call (used by the <c>update --prerelease</c> CLI flag).
-        /// <see langword="null"/> defers to the configured option;
-        /// <see langword="true"/>/<see langword="false"/> force inclusion or
-        /// exclusion. The default-interface implementation drops the override
-        /// and delegates to the base overload so existing custom updaters
-        /// continue to compile.
+        /// Convenience overload that applies no prerelease override — equivalent
+        /// to passing <see langword="null"/> to
+        /// <see cref="GetLatestReleaseAsync(bool?, CancellationToken)"/>.
         /// </summary>
-        Task<RemoteRelease?> GetLatestReleaseAsync(bool? includePrereleasesOverride, CancellationToken ct = default) =>
-            GetLatestReleaseAsync(ct);
+        /// <remarks>
+        /// A default interface implementation delegating to the
+        /// override-carrying method, so an updater implements one of the two and
+        /// cannot silently ignore the override. Before 1.0.0 this relationship
+        /// ran the other way round.
+        /// </remarks>
+        /// <param name="ct">Cancellation token.</param>
+        Task<RemoteRelease?> GetLatestReleaseAsync(CancellationToken ct = default) =>
+            GetLatestReleaseAsync(null, ct);
 
         /// <summary>
         /// Install the supplied release: download, run the verifier

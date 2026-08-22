@@ -16,21 +16,30 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// returns an <see cref="UpdateInfo"/> with
         /// <see cref="UpdateInfo.IsUpdateAvailable"/> populated.
         /// </summary>
-        Task<UpdateInfo?> CheckAsync(CancellationToken ct = default);
+        /// <param name="includePrereleasesOverride">
+        /// <see langword="null"/> defers to the configured
+        /// <see cref="SelfUpdaterOptions.IncludePrereleases"/>;
+        /// <see langword="true"/>/<see langword="false"/> force inclusion or
+        /// exclusion for this call. Drives the <c>update check --prerelease</c>
+        /// CLI flag.
+        /// </param>
+        /// <param name="ct">Cancellation token.</param>
+        Task<UpdateInfo?> CheckAsync(bool? includePrereleasesOverride, CancellationToken ct = default);
 
         /// <summary>
-        /// Per-invocation variant of <see cref="CheckAsync(CancellationToken)"/>
-        /// that lets the caller override
-        /// <see cref="SelfUpdaterOptions.IncludePrereleases"/> for one call
-        /// (used by the <c>update check --prerelease</c> CLI flag).
-        /// <see langword="null"/> defers to the configured option;
-        /// <see langword="true"/>/<see langword="false"/> force inclusion or
-        /// exclusion. The default-interface implementation drops the override
-        /// and delegates to the base overload so existing custom checkers
-        /// continue to compile.
+        /// Convenience overload that applies no prerelease override — equivalent
+        /// to passing <see langword="null"/> to
+        /// <see cref="CheckAsync(bool?, CancellationToken)"/>.
         /// </summary>
-        Task<UpdateInfo?> CheckAsync(bool? includePrereleasesOverride, CancellationToken ct = default) =>
-            CheckAsync(ct);
+        /// <remarks>
+        /// A default interface implementation delegating to the
+        /// override-carrying method, so a checker implements one of the two and
+        /// cannot silently ignore the override. Before 1.0.0 this relationship
+        /// ran the other way round.
+        /// </remarks>
+        /// <param name="ct">Cancellation token.</param>
+        Task<UpdateInfo?> CheckAsync(CancellationToken ct = default) =>
+            CheckAsync(null, ct);
 
         /// <summary>
         /// The running CLI's version, read from

@@ -25,29 +25,35 @@ namespace NextIteration.SpectreConsole.SelfUpdate
         /// Optional channel filter. <see langword="null"/> means the source's
         /// default channel (typically the latest non-prerelease tag).
         /// </param>
-        /// <param name="ct">Cancellation token honoured for both DNS and stream reads.</param>
-        Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct);
-
-        /// <summary>
-        /// Per-invocation variant of <see cref="GetLatestAsync(string?, CancellationToken)"/>
-        /// that lets the caller override
-        /// <see cref="SelfUpdaterOptions.IncludePrereleases"/> without
-        /// mutating shared options. Used by the <c>update --prerelease</c>
-        /// and <c>update check --prerelease</c> CLI flags.
-        /// </summary>
-        /// <param name="channel">Channel filter — see the base overload.</param>
         /// <param name="includePrereleasesOverride">
         /// <see langword="null"/> defers to the source's captured
         /// <see cref="SelfUpdaterOptions.IncludePrereleases"/>; <see langword="true"/>
         /// forces prerelease inclusion for this call; <see langword="false"/>
-        /// forces exclusion. The default interface implementation drops the
-        /// override and delegates to the base overload so existing third-party
-        /// sources continue to compile — implementers wanting to honour the
-        /// CLI flag should override this method explicitly.
+        /// forces exclusion. Drives the <c>update --prerelease</c> and
+        /// <c>update check --prerelease</c> CLI flags. A source with no concept
+        /// of a prerelease may ignore it, but must say so in its own docs.
         /// </param>
+        /// <param name="ct">Cancellation token honoured for both DNS and stream reads.</param>
+        Task<RemoteRelease?> GetLatestAsync(string? channel, bool? includePrereleasesOverride, CancellationToken ct);
+
+        /// <summary>
+        /// Convenience overload that applies no prerelease override — equivalent
+        /// to passing <see langword="null"/> to
+        /// <see cref="GetLatestAsync(string?, bool?, CancellationToken)"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is a default interface implementation and delegates to the
+        /// override-carrying method above, so a source only ever implements one
+        /// of the two and cannot silently ignore the override. Before 1.0.0 the
+        /// relationship ran the other way: the no-override method was the
+        /// abstract one and the override-carrying method defaulted to discarding
+        /// its argument, so a source that implemented only the abstract member
+        /// compiled cleanly and then silently ignored <c>--prerelease</c>.
+        /// </remarks>
+        /// <param name="channel">Channel filter — see the primary overload.</param>
         /// <param name="ct">Cancellation token.</param>
-        Task<RemoteRelease?> GetLatestAsync(string? channel, bool? includePrereleasesOverride, CancellationToken ct) =>
-            GetLatestAsync(channel, ct);
+        Task<RemoteRelease?> GetLatestAsync(string? channel, CancellationToken ct) =>
+            GetLatestAsync(channel, null, ct);
 
         /// <summary>
         /// Stream a single release asset to <paramref name="destination"/>.
