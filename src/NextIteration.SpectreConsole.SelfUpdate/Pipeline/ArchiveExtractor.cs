@@ -39,7 +39,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                or InvalidDataException or NotSupportedException)
             {
                 throw new UpdateException($"Failed to extract '{Path.GetFileName(archivePath)}': {ex.Message}", ex);
             }

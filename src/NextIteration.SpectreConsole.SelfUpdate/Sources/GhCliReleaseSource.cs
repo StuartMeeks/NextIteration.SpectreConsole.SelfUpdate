@@ -140,9 +140,13 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
             {
                 throw;
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is GhProcessException or JsonException
+                or IOException or OperationCanceledException)
             {
                 // Source contract: swallow transient failures and return null.
+                // Narrowed to the transport/parse failures a source can actually
+                // hit — an unexpected exception is a bug and now propagates
+                // instead of being reported as "no update available".
                 return null;
             }
         }
@@ -197,7 +201,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Sources
                     File.Delete(path);
                 }
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 // Best effort.
             }

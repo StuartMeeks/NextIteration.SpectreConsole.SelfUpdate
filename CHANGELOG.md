@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.0] — 2026-08-21
+## [1.0.0] — 2026-08-22
 
 First stable release. The public surface is now covered by Semantic Versioning:
 a breaking change to it requires a 2.0.0.
@@ -45,6 +45,14 @@ The three built-in sources and both built-in pipeline types already implemented
 the override-carrying method, so none of them changed behaviour.
 
 ### Changed
+
+- **Exception handling narrowed across the pipeline — unexpected exceptions now surface instead of being swallowed.** Nineteen `catch`-everything blocks caught any exception, so a genuine defect anywhere in the update path was silently reported as "no update available", "already up to date", or nothing at all, and could persist indefinitely. Each now catches only what its operation can actually produce: filesystem best-effort helpers take `IOException`/`UnauthorizedAccessException`, the cache file adds `JsonException`, archive extraction adds `InvalidDataException`/`NotSupportedException`, the HTTP sources take `HttpRequestException`/`JsonException`/`IOException`/`OperationCanceledException`, the `gh` source takes `GhProcessException` in place of the HTTP pair, and process termination takes `InvalidOperationException`/`Win32Exception`/`NotSupportedException`. The rollback paths in `UpdateInstaller` that catch broadly and *rethrow* are unchanged — they restore state rather than swallow. `UpdateCheckCommand` now matches `UpdateCommand` exactly (`when (ex is not OperationCanceledException)`): a command boundary still turns any failure into a message and an exit code, but lets Ctrl-C through rather than reporting it as a failed check. **This is a deliberate behaviour change**: a bug that used to be masked will now surface as an unhandled exception.
+
+- **CodeQL analyses C# buildless** (NextIteration.Standards §4.4). GitHub applies `paths-ignore` to a compiled language *only* when it is analysed without a build, so the mandated `**/obj/**` exclusion was silently inert under the explicit build and the xUnit auto-generated entry point was analysed and flagged anyway. `build-mode: none` makes the exclusion take effect, and buildless extraction reads source across every target framework at once — which is what the explicit build existed to guarantee — so the Setup .NET, Restore and Build steps are gone.
+
+- **Test consoles are owned by the fixture.** The three command harnesses hand their `TestConsole` to the caller, which reads `console.Output` after the harness returns, so it cannot be disposed at the creation site. Each test class now implements `IDisposable` and disposes every console it handed out at teardown, which disposes them properly rather than documenting why they were left undisposed.
+
+- **Typed locals replace upcast arguments** in the `UpdateCleanup.Run` null-argument tests. `Run` is overloaded on `IServiceProvider` and `IUpdateInstaller`; a typed local pins which overload each test targets without an upcast expression at the call site.
 
 - **The prerelease-override overloads were inverted on all three interfaces** — see the breaking-change note above. A regression test (`InterfaceDefaultsTests`) implements each interface with *only* its abstract member and asserts the override reaches it, so if the abstract member ever moves back to the no-override overload the test project stops compiling.
 

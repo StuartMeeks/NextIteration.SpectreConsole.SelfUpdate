@@ -64,8 +64,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate
                 }
                 info = checkTask.GetAwaiter().GetResult();
             }
-            catch
+            catch (Exception ex) when (ex is AggregateException or UpdateException
+                or HttpRequestException or IOException or OperationCanceledException)
             {
+                // The banner is decoration: a check that failed or timed out
+                // simply renders nothing. Task.Wait surfaces a fault as an
+                // AggregateException, hence its presence here.
                 return;
             }
             if (info is null || !info.IsUpdateAvailable)

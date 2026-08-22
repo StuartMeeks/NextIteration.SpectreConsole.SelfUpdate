@@ -60,7 +60,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
             {
                 info = await _checker.CheckAsync(prereleaseOverride, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            // Mirrors UpdateCommand: a command boundary turns any failure into a
+            // message and an exit code, but must let cancellation through so
+            // Ctrl-C is not reported as "could not determine the latest release".
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _console.MarkupLineInterpolated(CultureInfo.InvariantCulture,
                     $"[red]Could not determine the latest release:[/] {ex.Message}");

@@ -85,7 +85,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             {
                 // Restore writability so TempDir.Dispose() can clean up.
                 try { File.SetUnixFileMode(sub, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
-                catch { /* best effort */ }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Best effort.
+                }
             }
         }
     }

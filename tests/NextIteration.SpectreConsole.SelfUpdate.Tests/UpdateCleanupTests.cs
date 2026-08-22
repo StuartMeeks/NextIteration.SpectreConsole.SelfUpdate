@@ -51,14 +51,24 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
             Assert.Contains("Cleaning up previous update", console.Output, StringComparison.Ordinal);
         }
 
+        // Run is overloaded on IServiceProvider and IUpdateInstaller. A typed
+        // local pins which overload each test targets without an upcast
+        // expression at the call site.
         [Fact]
-        public void Run_with_null_services_throws() => Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run((IServiceProvider)null!));
+        public void Run_with_null_services_throws()
+        {
+            IServiceProvider services = null!;
+
+            Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run(services));
+        }
 
         [Fact]
         public void Run_with_null_installer_throws()
         {
+            IUpdateInstaller installer = null!;
             using var console = new TestConsole();
-            Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run((IUpdateInstaller)null!, console));
+
+            Assert.Throws<ArgumentNullException>(() => UpdateCleanup.Run(installer, console));
         }
 
         [Fact]
