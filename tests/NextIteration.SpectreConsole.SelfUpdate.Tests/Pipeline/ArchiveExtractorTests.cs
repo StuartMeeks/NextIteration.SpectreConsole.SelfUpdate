@@ -20,8 +20,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
 
             await ArchiveExtractor.ExtractAsync(zipPath, dest, CancellationToken.None);
 
-            Assert.Equal("hello", await File.ReadAllTextAsync(Path.Combine(dest, "file1.txt"), TestContext.Current.CancellationToken));
-            Assert.Equal("world", await File.ReadAllTextAsync(Path.Combine(dest, "nested", "file2.txt"), TestContext.Current.CancellationToken));
+            Assert.Equal("hello", await File.ReadAllTextAsync(Path.Join(dest, "file1.txt"), TestContext.Current.CancellationToken));
+            Assert.Equal("world", await File.ReadAllTextAsync(Path.Join(dest, "nested", "file2.txt"), TestContext.Current.CancellationToken));
         }
 
         [Fact]
@@ -34,8 +34,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
 
             await ArchiveExtractor.ExtractAsync(tarGzPath, dest, CancellationToken.None);
 
-            Assert.Equal("hello", await File.ReadAllTextAsync(Path.Combine(dest, "file1.txt"), TestContext.Current.CancellationToken));
-            Assert.Equal("world", await File.ReadAllTextAsync(Path.Combine(dest, "nested", "file2.txt"), TestContext.Current.CancellationToken));
+            Assert.Equal("hello", await File.ReadAllTextAsync(Path.Join(dest, "file1.txt"), TestContext.Current.CancellationToken));
+            Assert.Equal("world", await File.ReadAllTextAsync(Path.Join(dest, "nested", "file2.txt"), TestContext.Current.CancellationToken));
         }
 
         [Fact]
@@ -68,7 +68,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             using var staging = new TempDir("tar-stage");
             foreach (var (name, content) in entries)
             {
-                var full = Path.Combine(staging.Path, name);
+                var full = Path.Join(staging.Path, name);
                 Directory.CreateDirectory(Path.GetDirectoryName(full)!);
                 File.WriteAllText(full, content);
             }

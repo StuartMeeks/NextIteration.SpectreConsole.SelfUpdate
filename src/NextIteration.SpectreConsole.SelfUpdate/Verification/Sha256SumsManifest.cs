@@ -16,9 +16,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Verification
             ArgumentNullException.ThrowIfNull(content);
 
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var rawLine in content.Split('\n'))
+            foreach (var line in content.Split('\n').Select(rawLine => rawLine.Trim()))
             {
-                var line = rawLine.Trim();
                 if (line.Length == 0 || line.StartsWith('#'))
                 {
                     continue;

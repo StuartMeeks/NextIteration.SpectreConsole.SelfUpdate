@@ -21,9 +21,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public async Task InstallAsync_swaps_files_into_install_directory()
         {
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
+            var installDir = Path.Join(work.Path, "install");
             Directory.CreateDirectory(installDir);
-            File.WriteAllText(Path.Combine(installDir, "old-file.txt"), "old content");
+            File.WriteAllText(Path.Join(installDir, "old-file.txt"), "old content");
 
             var release = BuildReleaseWithSingleAssetZip(
                 tag: "v1.4.2",
@@ -43,22 +43,22 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             await installer.InstallAsync(release, progress: null, onConflict: null, CancellationToken.None);
 
             // New files in place
-            Assert.Equal("new binary", await File.ReadAllTextAsync(Path.Combine(installDir, "myapp.exe"), TestContext.Current.CancellationToken));
-            Assert.Equal("{}", await File.ReadAllTextAsync(Path.Combine(installDir, "settings.json"), TestContext.Current.CancellationToken));
+            Assert.Equal("new binary", await File.ReadAllTextAsync(Path.Join(installDir, "myapp.exe"), TestContext.Current.CancellationToken));
+            Assert.Equal("{}", await File.ReadAllTextAsync(Path.Join(installDir, "settings.json"), TestContext.Current.CancellationToken));
 
             // Old file moved to .old/
-            Assert.True(Directory.Exists(Path.Combine(installDir, ".old")));
-            Assert.Equal("old content", await File.ReadAllTextAsync(Path.Combine(installDir, ".old", "old-file.txt"), TestContext.Current.CancellationToken));
+            Assert.True(Directory.Exists(Path.Join(installDir, ".old")));
+            Assert.Equal("old content", await File.ReadAllTextAsync(Path.Join(installDir, ".old", "old-file.txt"), TestContext.Current.CancellationToken));
 
             // Staging removed
-            Assert.False(Directory.Exists(Path.Combine(installDir, ".update")));
+            Assert.False(Directory.Exists(Path.Join(installDir, ".update")));
         }
 
         [Fact]
         public async Task InstallAsync_throws_when_no_asset_matches_rid()
         {
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
+            var installDir = Path.Join(work.Path, "install");
             Directory.CreateDirectory(installDir);
 
             var release = new RemoteRelease(
@@ -83,7 +83,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public async Task InstallAsync_reports_progress_for_each_stage()
         {
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
+            var installDir = Path.Join(work.Path, "install");
             Directory.CreateDirectory(installDir);
 
             var release = BuildReleaseWithSingleAssetZip("v1.0.0", "myapp-v1.0.0-linux-x64.zip", ("a.txt", "x"), ("b.txt", "y"));
@@ -112,14 +112,14 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public void CleanupOldInstall_when_old_directory_exists_deletes_it()
         {
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
-            Directory.CreateDirectory(Path.Combine(installDir, ".old"));
-            File.WriteAllText(Path.Combine(installDir, ".old", "garbage.txt"), "stale");
+            var installDir = Path.Join(work.Path, "install");
+            Directory.CreateDirectory(Path.Join(installDir, ".old"));
+            File.WriteAllText(Path.Join(installDir, ".old", "garbage.txt"), "stale");
 
             var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-x64");
             installer.CleanupOldInstall();
 
-            Assert.False(Directory.Exists(Path.Combine(installDir, ".old")));
+            Assert.False(Directory.Exists(Path.Join(installDir, ".old")));
         }
 
         [Fact]
@@ -131,39 +131,39 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             // this CleanupOldInstall would only touch .old/ and .update/
             // would accumulate across sessions.
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
-            var staging = Path.Combine(installDir, ".update", "v1.4.2");
+            var installDir = Path.Join(work.Path, "install");
+            var staging = Path.Join(installDir, ".update", "v1.4.2");
             Directory.CreateDirectory(staging);
-            File.WriteAllText(Path.Combine(staging, "leftover.txt"), "stale");
+            File.WriteAllText(Path.Join(staging, "leftover.txt"), "stale");
 
             var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-x64");
             installer.CleanupOldInstall();
 
-            Assert.False(Directory.Exists(Path.Combine(installDir, ".update")));
+            Assert.False(Directory.Exists(Path.Join(installDir, ".update")));
         }
 
         [Fact]
         public void CleanupOldInstall_cleans_both_old_and_update_directories()
         {
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
-            Directory.CreateDirectory(Path.Combine(installDir, ".old"));
-            File.WriteAllText(Path.Combine(installDir, ".old", "garbage.txt"), "stale");
-            Directory.CreateDirectory(Path.Combine(installDir, ".update", "v1.4.2"));
-            File.WriteAllText(Path.Combine(installDir, ".update", "v1.4.2", "archive.zip"), "stale");
+            var installDir = Path.Join(work.Path, "install");
+            Directory.CreateDirectory(Path.Join(installDir, ".old"));
+            File.WriteAllText(Path.Join(installDir, ".old", "garbage.txt"), "stale");
+            Directory.CreateDirectory(Path.Join(installDir, ".update", "v1.4.2"));
+            File.WriteAllText(Path.Join(installDir, ".update", "v1.4.2", "archive.zip"), "stale");
 
             var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-x64");
             installer.CleanupOldInstall();
 
-            Assert.False(Directory.Exists(Path.Combine(installDir, ".old")));
-            Assert.False(Directory.Exists(Path.Combine(installDir, ".update")));
+            Assert.False(Directory.Exists(Path.Join(installDir, ".old")));
+            Assert.False(Directory.Exists(Path.Join(installDir, ".update")));
         }
 
         [Fact]
         public void CleanupOldInstall_when_old_directory_missing_is_noop()
         {
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
+            var installDir = Path.Join(work.Path, "install");
             Directory.CreateDirectory(installDir);
 
             var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-x64");
@@ -174,7 +174,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public void HasPendingCleanup_when_neither_directory_exists_false()
         {
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
+            var installDir = Path.Join(work.Path, "install");
             Directory.CreateDirectory(installDir);
 
             var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-x64");
@@ -186,8 +186,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public void HasPendingCleanup_when_old_directory_exists_true()
         {
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
-            Directory.CreateDirectory(Path.Combine(installDir, ".old"));
+            var installDir = Path.Join(work.Path, "install");
+            Directory.CreateDirectory(Path.Join(installDir, ".old"));
 
             var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-x64");
 
@@ -198,8 +198,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public void HasPendingCleanup_when_update_directory_exists_true()
         {
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
-            Directory.CreateDirectory(Path.Combine(installDir, ".update", "v1.4.2"));
+            var installDir = Path.Join(work.Path, "install");
+            Directory.CreateDirectory(Path.Join(installDir, ".update", "v1.4.2"));
 
             var installer = NewInstaller(installDir, new FakeUpdateSource(), "linux-x64");
 
@@ -210,7 +210,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public async Task InstallAsync_when_lock_file_held_throws()
         {
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
+            var installDir = Path.Join(work.Path, "install");
             Directory.CreateDirectory(installDir);
 
             var release = BuildReleaseWithSingleAssetZip("v1.0.0", "myapp-v1.0.0-linux-x64.zip", ("a.txt", "x"));
@@ -220,7 +220,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             };
 
             // Hold the lock externally.
-            var lockPath = Path.Combine(installDir, ".update.lock");
+            var lockPath = Path.Join(installDir, ".update.lock");
             using var foreignLock = new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
 
             var installer = NewInstaller(installDir, source, "linux-x64");
@@ -235,17 +235,17 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             // the lock, so a second installer would wipe a first installer's
             // in-flight staging directory on its way to losing the lock race.
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
+            var installDir = Path.Join(work.Path, "install");
             Directory.CreateDirectory(installDir);
 
             // Pre-populate a staging dir as if another installer were mid-download.
-            var stagingDir = Path.Combine(installDir, ".update", "v1.0.0");
+            var stagingDir = Path.Join(installDir, ".update", "v1.0.0");
             Directory.CreateDirectory(stagingDir);
-            var sentinel = Path.Combine(stagingDir, "in-flight-asset.zip");
+            var sentinel = Path.Join(stagingDir, "in-flight-asset.zip");
             File.WriteAllBytes(sentinel, [1, 2, 3]);
 
             // Hold the lock externally to simulate that other installer.
-            var lockPath = Path.Combine(installDir, ".update.lock");
+            var lockPath = Path.Join(installDir, ".update.lock");
             using var foreignLock = new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
 
             var release = BuildReleaseWithSingleAssetZip("v1.0.0", "myapp-v1.0.0-linux-x64.zip", ("a.txt", "x"));
@@ -266,7 +266,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public async Task InstallAsync_when_resolver_returns_malicious_name_throws()
         {
             using var work = new TempDir();
-            var installDir = Path.Combine(work.Path, "install");
+            var installDir = Path.Join(work.Path, "install");
             Directory.CreateDirectory(installDir);
 
             var malicious = new ReleaseAsset(
@@ -345,16 +345,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             Directory.CreateDirectory(installDir);
             Directory.CreateDirectory(oldDir);
 
-            File.WriteAllText(Path.Combine(oldDir, "a.txt"), "alpha");
-            Directory.CreateDirectory(Path.Combine(oldDir, "subdir"));
-            File.WriteAllText(Path.Combine(oldDir, "subdir", "nested.txt"), "nested");
+            File.WriteAllText(Path.Join(oldDir, "a.txt"), "alpha");
+            Directory.CreateDirectory(Path.Join(oldDir, "subdir"));
+            File.WriteAllText(Path.Join(oldDir, "subdir", "nested.txt"), "nested");
 
             UpdateInstaller.RestoreFromOld(oldDir, installDir, TwoEntryNames);
 
-            Assert.Equal("alpha", File.ReadAllText(Path.Combine(installDir, "a.txt")));
-            Assert.True(Directory.Exists(Path.Combine(installDir, "subdir")));
-            Assert.Equal("nested", File.ReadAllText(Path.Combine(installDir, "subdir", "nested.txt")));
-            Assert.False(File.Exists(Path.Combine(oldDir, "a.txt")));
+            Assert.Equal("alpha", File.ReadAllText(Path.Join(installDir, "a.txt")));
+            Assert.True(Directory.Exists(Path.Join(installDir, "subdir")));
+            Assert.Equal("nested", File.ReadAllText(Path.Join(installDir, "subdir", "nested.txt")));
+            Assert.False(File.Exists(Path.Join(oldDir, "a.txt")));
         }
 
         [Fact]
@@ -366,12 +366,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             Directory.CreateDirectory(installDir);
             Directory.CreateDirectory(oldDir);
 
-            File.WriteAllText(Path.Combine(installDir, "a.txt"), "garbage from a partial copy");
-            File.WriteAllText(Path.Combine(oldDir, "a.txt"), "original");
+            File.WriteAllText(Path.Join(installDir, "a.txt"), "garbage from a partial copy");
+            File.WriteAllText(Path.Join(oldDir, "a.txt"), "original");
 
             UpdateInstaller.RestoreFromOld(oldDir, installDir, OneEntryName);
 
-            Assert.Equal("original", File.ReadAllText(Path.Combine(installDir, "a.txt")));
+            Assert.Equal("original", File.ReadAllText(Path.Join(installDir, "a.txt")));
         }
 
         [Fact]
@@ -386,27 +386,27 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             using var work = new TempDir();
             var installDir = work.Combine("install");
             Directory.CreateDirectory(installDir);
-            File.WriteAllText(Path.Combine(installDir, "current.txt"), "original");
-            Directory.CreateDirectory(Path.Combine(installDir, "vendor"));
-            File.WriteAllText(Path.Combine(installDir, "vendor", "lib.txt"), "lib v1");
+            File.WriteAllText(Path.Join(installDir, "current.txt"), "original");
+            Directory.CreateDirectory(Path.Join(installDir, "vendor"));
+            File.WriteAllText(Path.Join(installDir, "vendor", "lib.txt"), "lib v1");
 
             var sourceDir = work.Combine("src");
             Directory.CreateDirectory(sourceDir);
-            File.WriteAllText(Path.Combine(sourceDir, "newfile.txt"), "new content");
-            File.WriteAllText(Path.Combine(sourceDir, ".old"), "should clash with the .old/ dir");
+            File.WriteAllText(Path.Join(sourceDir, "newfile.txt"), "new content");
+            File.WriteAllText(Path.Join(sourceDir, ".old"), "should clash with the .old/ dir");
 
-            var oldDir = Path.Combine(installDir, ".old");
+            var oldDir = Path.Join(installDir, ".old");
 
             Assert.ThrowsAny<Exception>(() => UpdateInstaller.Swap(sourceDir, installDir, oldDir));
 
             // Original install state restored.
-            Assert.True(File.Exists(Path.Combine(installDir, "current.txt")));
-            Assert.Equal("original", File.ReadAllText(Path.Combine(installDir, "current.txt")));
-            Assert.True(Directory.Exists(Path.Combine(installDir, "vendor")));
-            Assert.Equal("lib v1", File.ReadAllText(Path.Combine(installDir, "vendor", "lib.txt")));
+            Assert.True(File.Exists(Path.Join(installDir, "current.txt")));
+            Assert.Equal("original", File.ReadAllText(Path.Join(installDir, "current.txt")));
+            Assert.True(Directory.Exists(Path.Join(installDir, "vendor")));
+            Assert.Equal("lib v1", File.ReadAllText(Path.Join(installDir, "vendor", "lib.txt")));
 
             // Anything Phase 2 managed to place before the failure is gone.
-            Assert.False(File.Exists(Path.Combine(installDir, "newfile.txt")));
+            Assert.False(File.Exists(Path.Join(installDir, "newfile.txt")));
         }
 
         [Theory]
@@ -434,12 +434,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             using var work = new TempDir();
             var installDir = work.Combine("install");
             var sourceDir = work.Combine("src");
-            var oldDir = Path.Combine(installDir, ".old");
+            var oldDir = Path.Join(installDir, ".old");
             Directory.CreateDirectory(installDir);
             Directory.CreateDirectory(sourceDir);
-            File.WriteAllText(Path.Combine(installDir, "appsettings.Development.json"), "user-config");
-            File.WriteAllText(Path.Combine(installDir, "binary.exe"), "old-binary");
-            File.WriteAllText(Path.Combine(sourceDir, "binary.exe"), "new-binary");
+            File.WriteAllText(Path.Join(installDir, "appsettings.Development.json"), "user-config");
+            File.WriteAllText(Path.Join(installDir, "binary.exe"), "old-binary");
+            File.WriteAllText(Path.Join(sourceDir, "binary.exe"), "new-binary");
 
             await UpdateInstaller.SwapAsync(
                 sourceDir, installDir, oldDir,
@@ -448,11 +448,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 CancellationToken.None);
 
             // Preserved file untouched.
-            Assert.Equal("user-config", File.ReadAllText(Path.Combine(installDir, "appsettings.Development.json")));
-            Assert.False(File.Exists(Path.Combine(oldDir, "appsettings.Development.json")));
+            Assert.Equal("user-config", File.ReadAllText(Path.Join(installDir, "appsettings.Development.json")));
+            Assert.False(File.Exists(Path.Join(oldDir, "appsettings.Development.json")));
             // Non-preserved file replaced.
-            Assert.Equal("new-binary", File.ReadAllText(Path.Combine(installDir, "binary.exe")));
-            Assert.Equal("old-binary", File.ReadAllText(Path.Combine(oldDir, "binary.exe")));
+            Assert.Equal("new-binary", File.ReadAllText(Path.Join(installDir, "binary.exe")));
+            Assert.Equal("old-binary", File.ReadAllText(Path.Join(oldDir, "binary.exe")));
         }
 
         [Fact]
@@ -461,11 +461,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             using var work = new TempDir();
             var installDir = work.Combine("install");
             var sourceDir = work.Combine("src");
-            var oldDir = Path.Combine(installDir, ".old");
+            var oldDir = Path.Join(installDir, ".old");
             Directory.CreateDirectory(installDir);
             Directory.CreateDirectory(sourceDir);
-            File.WriteAllText(Path.Combine(installDir, "appsettings.json"), "user-edited");
-            File.WriteAllText(Path.Combine(sourceDir, "appsettings.json"), "release-default");
+            File.WriteAllText(Path.Join(installDir, "appsettings.json"), "user-edited");
+            File.WriteAllText(Path.Join(sourceDir, "appsettings.json"), "release-default");
 
             await UpdateInstaller.SwapAsync(
                 sourceDir, installDir, oldDir,
@@ -473,8 +473,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 onConflict: null,                       // null → keep existing
                 CancellationToken.None);
 
-            Assert.Equal("user-edited", File.ReadAllText(Path.Combine(installDir, "appsettings.json")));
-            Assert.False(File.Exists(Path.Combine(oldDir, "appsettings.json")));
+            Assert.Equal("user-edited", File.ReadAllText(Path.Join(installDir, "appsettings.json")));
+            Assert.False(File.Exists(Path.Join(oldDir, "appsettings.json")));
         }
 
         [Fact]
@@ -483,11 +483,11 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             using var work = new TempDir();
             var installDir = work.Combine("install");
             var sourceDir = work.Combine("src");
-            var oldDir = Path.Combine(installDir, ".old");
+            var oldDir = Path.Join(installDir, ".old");
             Directory.CreateDirectory(installDir);
             Directory.CreateDirectory(sourceDir);
-            File.WriteAllText(Path.Combine(installDir, "appsettings.json"), "user-edited");
-            File.WriteAllText(Path.Combine(sourceDir, "appsettings.json"), "release-default");
+            File.WriteAllText(Path.Join(installDir, "appsettings.json"), "user-edited");
+            File.WriteAllText(Path.Join(sourceDir, "appsettings.json"), "release-default");
 
             UpdateConflict? sawConflict = null;
             Func<UpdateConflict, CancellationToken, Task<UpdateConflictResolution>> resolver =
@@ -501,9 +501,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
 
             Assert.NotNull(sawConflict);
             Assert.Equal("appsettings.json", sawConflict!.RelativePath);
-            Assert.Equal("release-default", File.ReadAllText(Path.Combine(installDir, "appsettings.json")));
+            Assert.Equal("release-default", File.ReadAllText(Path.Join(installDir, "appsettings.json")));
             // Previous user copy moved to .old/ (so the next-startup cleanup sweep removes it).
-            Assert.Equal("user-edited", File.ReadAllText(Path.Combine(oldDir, "appsettings.json")));
+            Assert.Equal("user-edited", File.ReadAllText(Path.Join(oldDir, "appsettings.json")));
         }
 
         [Fact]
@@ -512,12 +512,12 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             using var work = new TempDir();
             var installDir = work.Combine("install");
             var sourceDir = work.Combine("src");
-            var oldDir = Path.Combine(installDir, ".old");
+            var oldDir = Path.Join(installDir, ".old");
             Directory.CreateDirectory(installDir);
             Directory.CreateDirectory(sourceDir);
-            File.WriteAllText(Path.Combine(installDir, "myapp.db"), "user-db");
-            File.WriteAllText(Path.Combine(installDir, "binary.exe"), "old-binary");
-            File.WriteAllText(Path.Combine(sourceDir, "binary.exe"), "new-binary");
+            File.WriteAllText(Path.Join(installDir, "myapp.db"), "user-db");
+            File.WriteAllText(Path.Join(installDir, "binary.exe"), "old-binary");
+            File.WriteAllText(Path.Join(sourceDir, "binary.exe"), "new-binary");
             // Note: source does NOT ship myapp.db.
 
             await UpdateInstaller.SwapAsync(
@@ -526,8 +526,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 onConflict: null,
                 CancellationToken.None);
 
-            Assert.Equal("user-db", File.ReadAllText(Path.Combine(installDir, "myapp.db")));
-            Assert.Equal("new-binary", File.ReadAllText(Path.Combine(installDir, "binary.exe")));
+            Assert.Equal("user-db", File.ReadAllText(Path.Join(installDir, "myapp.db")));
+            Assert.Equal("new-binary", File.ReadAllText(Path.Join(installDir, "binary.exe")));
         }
 
         [Fact]
@@ -536,10 +536,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             using var work = new TempDir();
             var installDir = work.Combine("install");
             var sourceDir = work.Combine("src");
-            var oldDir = Path.Combine(installDir, ".old");
+            var oldDir = Path.Join(installDir, ".old");
             Directory.CreateDirectory(installDir);
             Directory.CreateDirectory(sourceDir);
-            File.WriteAllText(Path.Combine(sourceDir, "appsettings.Production.json"), "release-default");
+            File.WriteAllText(Path.Join(sourceDir, "appsettings.Production.json"), "release-default");
 
             // The path is preservable but the user doesn't have a copy yet —
             // installer should just place the new file with no resolver call.
@@ -554,7 +554,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 CancellationToken.None);
 
             Assert.False(resolverCalled);
-            Assert.Equal("release-default", File.ReadAllText(Path.Combine(installDir, "appsettings.Production.json")));
+            Assert.Equal("release-default", File.ReadAllText(Path.Join(installDir, "appsettings.Production.json")));
         }
 
         [Fact]
@@ -563,21 +563,21 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             using var work = new TempDir();
             var installDir = work.Combine("install");
             Directory.CreateDirectory(installDir);
-            Directory.CreateDirectory(Path.Combine(installDir, ".update", "v1"));
-            Directory.CreateDirectory(Path.Combine(installDir, ".old"));
-            File.WriteAllText(Path.Combine(installDir, ".update.lock"), "");
-            File.WriteAllText(Path.Combine(installDir, "real-file.txt"), "live");
+            Directory.CreateDirectory(Path.Join(installDir, ".update", "v1"));
+            Directory.CreateDirectory(Path.Join(installDir, ".old"));
+            File.WriteAllText(Path.Join(installDir, ".update.lock"), "");
+            File.WriteAllText(Path.Join(installDir, "real-file.txt"), "live");
 
             var sourceDir = work.Combine("src");
             Directory.CreateDirectory(sourceDir);
-            File.WriteAllText(Path.Combine(sourceDir, "real-file.txt"), "updated");
+            File.WriteAllText(Path.Join(sourceDir, "real-file.txt"), "updated");
 
-            var oldDir = Path.Combine(installDir, ".old");
+            var oldDir = Path.Join(installDir, ".old");
             UpdateInstaller.Swap(sourceDir, installDir, oldDir);
 
-            Assert.Equal("updated", File.ReadAllText(Path.Combine(installDir, "real-file.txt")));
-            Assert.True(Directory.Exists(Path.Combine(installDir, ".update", "v1")), ".update should not be moved into .old");
-            Assert.True(File.Exists(Path.Combine(installDir, ".update.lock")), "lock file should survive the swap");
+            Assert.Equal("updated", File.ReadAllText(Path.Join(installDir, "real-file.txt")));
+            Assert.True(Directory.Exists(Path.Join(installDir, ".update", "v1")), ".update should not be moved into .old");
+            Assert.True(File.Exists(Path.Join(installDir, ".update.lock")), "lock file should survive the swap");
         }
 
         // ---------- Helpers ----------
@@ -621,7 +621,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public void DeleteDirectoryRobustly_when_path_missing_is_noop()
         {
             using var work = new TempDir();
-            var missing = Path.Combine(work.Path, "does-not-exist");
+            var missing = Path.Join(work.Path, "does-not-exist");
 
             var deleterCalls = 0;
             var sleeperCalls = 0;
@@ -638,7 +638,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public void DeleteDirectoryRobustly_succeeds_first_try_calls_deleter_once_no_sleeps()
         {
             using var work = new TempDir();
-            var dir = Path.Combine(work.Path, "tree");
+            var dir = Path.Join(work.Path, "tree");
             Directory.CreateDirectory(dir);
 
             var deleterCalls = 0;
@@ -663,7 +663,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             // Simulates OneDrive / antivirus / Windows Search holding a
             // sharing-violation handle that releases within a few hundred ms.
             using var work = new TempDir();
-            var dir = Path.Combine(work.Path, "tree");
+            var dir = Path.Join(work.Path, "tree");
             Directory.CreateDirectory(dir);
 
             var deleterCalls = 0;
@@ -690,7 +690,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public void DeleteDirectoryRobustly_throws_after_exhausting_retries()
         {
             using var work = new TempDir();
-            var dir = Path.Combine(work.Path, "tree");
+            var dir = Path.Join(work.Path, "tree");
             Directory.CreateDirectory(dir);
 
             var deleterCalls = 0;
@@ -721,9 +721,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             // delegating, otherwise extracted-archive content (which often
             // arrives ReadOnly on Windows) breaks the recursive delete.
             using var work = new TempDir();
-            var dir = Path.Combine(work.Path, "tree");
+            var dir = Path.Join(work.Path, "tree");
             Directory.CreateDirectory(dir);
-            var readOnlyFile = Path.Combine(dir, "readonly.txt");
+            var readOnlyFile = Path.Join(dir, "readonly.txt");
             File.WriteAllText(readOnlyFile, "ro");
             File.SetAttributes(readOnlyFile, File.GetAttributes(readOnlyFile) | FileAttributes.ReadOnly);
 

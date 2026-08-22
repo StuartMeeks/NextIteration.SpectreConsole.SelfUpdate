@@ -11,7 +11,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public void Acquire_on_fresh_path_returns_open_stream()
         {
             using var dir = new TempDir();
-            var lockPath = Path.Combine(dir.Path, ".update.lock");
+            var lockPath = Path.Join(dir.Path, ".update.lock");
 
             using var stream = InstallLock.Acquire(lockPath, dir.Path);
 
@@ -23,7 +23,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public void Acquire_when_lock_already_held_throws_in_progress()
         {
             using var dir = new TempDir();
-            var lockPath = Path.Combine(dir.Path, ".update.lock");
+            var lockPath = Path.Join(dir.Path, ".update.lock");
 
             using var first = InstallLock.Acquire(lockPath, dir.Path);
 
@@ -35,9 +35,9 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         public void Disposing_first_lock_removes_file_and_allows_re_acquisition()
         {
             using var dir = new TempDir();
-            var lockPath = Path.Combine(dir.Path, ".update.lock");
+            var lockPath = Path.Join(dir.Path, ".update.lock");
 
-            using (var first = InstallLock.Acquire(lockPath, dir.Path))
+            using (InstallLock.Acquire(lockPath, dir.Path))
             {
                 Assert.True(File.Exists(lockPath));
             }
@@ -71,14 +71,14 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
             }
 
             using var dir = new TempDir();
-            var sub = Path.Combine(dir.Path, "ro");
+            var sub = Path.Join(dir.Path, "ro");
             Directory.CreateDirectory(sub);
             try
             {
                 File.SetUnixFileMode(sub, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
                 var ex = Assert.Throws<UpdateException>(() =>
-                    InstallLock.Acquire(Path.Combine(sub, ".update.lock"), sub));
+                    InstallLock.Acquire(Path.Join(sub, ".update.lock"), sub));
                 Assert.Contains("not writable", ex.Message, StringComparison.OrdinalIgnoreCase);
             }
             finally
