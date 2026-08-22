@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`PackageValidationBaselineVersion` moved to `1.0.1`**, now that 1.0.1 is published and restorable. From here an accidental break in the public surface fails the build against the first stable release rather than against `0.3.1`, so a break is a 2.0.0 rather than a judgement call. There is no 1.0.0 to baseline against — it was never published.
+
 ---
 
 ## [1.0.1] — 2026-08-22
