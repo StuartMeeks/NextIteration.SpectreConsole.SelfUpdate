@@ -47,7 +47,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
         }
 
         /// <inheritdoc />
-        protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(settings);
 

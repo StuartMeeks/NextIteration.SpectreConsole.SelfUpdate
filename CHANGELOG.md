@@ -9,9 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.1.0] — 2026-10-06
+
+Moves to **Spectre.Console.Cli 0.57.2**. Spectre.Console.Cli now ships on its own release
+line, and 0.57 changed `AsyncCommand<TSettings>.ExecuteAsync` from `protected` to `public`.
+`UpdateCommand` and `UpdateCheckCommand` follow suit. Widening an override is a compatible
+change for this package (package validation against the 1.0.1 baseline passes), but **raising the floor affects your own commands**: once you upgrade, every
+`AsyncCommand`/`Command` in your app built against 0.55 has to declare its
+`Execute`/`ExecuteAsync` override `public`, or the build fails with CS0507.
+
 ### Changed
 
+- **Spectre.Console.Cli floor raised from 0.55.0 to 0.57.2**, matching Spectre.Console.
+- **`ExecuteAsync` on `UpdateCommand` and `UpdateCheckCommand` is now `public`**, as
+  Spectre.Console.Cli 0.57 requires.
+- **`net10.0` floors for `Microsoft.Extensions.DependencyInjection.Abstractions` and
+  `Microsoft.Extensions.Http` raised from 10.0.11 to 10.0.12**, the current servicing
+  release. The `net8.0` floors (8.0.2 / 8.0.1) are unchanged.
 - **`PackageValidationBaselineVersion` moved to `1.0.1`**, now that 1.0.1 is published and restorable. From here an accidental break in the public surface fails the build against the first stable release rather than against `0.3.1`, so a break is a 2.0.0 rather than a judgement call. There is no 1.0.0 to baseline against — it was never published.
+- **Dependabot now ignores the per-TFM-floored packages outright** (STANDARD.md 4.10).
+  The previous `semver-major`-only ignore let a net10 minor/patch bump rewrite the net8
+  floor to a 10.x version. Both floors are now bumped by hand.
+- Build and test tooling: Microsoft.SourceLink.GitHub 10.0.401, xunit.v3 4.0.1,
+  Microsoft.Testing.Extensions.CodeCoverage 18.11.2. None ship to consumers.
+
+### Documentation
+
+- README: Install now lists the Spectre.Console / Spectre.Console.Cli floors and the
+  per-TFM `Microsoft.Extensions.*` floors.
 
 ---
 
@@ -277,7 +304,8 @@ Initial commit. Never published to nuget.org — superseded by 0.1.1 before the 
 - Full XML documentation on the public surface, `TreatWarningsAsErrors=true`, `AnalysisLevel=latest`.
 - SourceLink, deterministic builds, published symbol packages.
 
-[Unreleased]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v1.0.1
 [0.3.1]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.3.1
 [0.3.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.3.0

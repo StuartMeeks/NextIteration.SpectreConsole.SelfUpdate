@@ -34,6 +34,10 @@ dotnet add package NextIteration.SpectreConsole.SelfUpdate
 
 Targets `net8.0` and `net10.0`. Both targets carry an identical public surface and are covered by the same test suite on Linux, macOS, and Windows.
 
+Requires **Spectre.Console** 0.57.2+ and **Spectre.Console.Cli** 0.57.2+. The
+`Microsoft.Extensions.*` dependencies are floored per target framework (8.0.x on `net8.0`,
+10.0.12+ on `net10.0`), so a `net8.0` consumer stays on its own servicing line.
+
 ## Quick start
 
 ```csharp
