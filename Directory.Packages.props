@@ -75,8 +75,8 @@
 		and the .NET 10 SDK no longer supports testing through the VSTest bridge.
 	-->
 	<ItemGroup>
-		<PackageVersion Include="xunit.v3" Version="4.0.1" />
-		<PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />
+		<PackageVersion Include="xunit.v3" Version="4.0.2" />
+		<PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
 	</ItemGroup>
 
 </Project>
