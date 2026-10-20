@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 
 using NextIteration.SpectreConsole.SelfUpdate.Commands;
+using NextIteration.SpectreConsole.SelfUpdate.Internal;
 using NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure;
 
 using Spectre.Console;
@@ -172,6 +173,65 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
         }
 
         [Fact]
+        public async Task Execute_when_install_succeeds_suppresses_post_run_banner()
+        {
+            using var session = UpdateSession.BeginTestScope();
+            var (run, _, _) = BuildHarness(
+                configChecker: c => c.CurrentVersion = "1.0.0",
+                configUpdater: u => u.GetLatestImpl = _ => Task.FromResult<RemoteRelease?>(ReleaseV142));
+
+            await run("--yes");
+
+            Assert.Equal(string.Empty, RenderBannerAfterRun());
+        }
+
+        [Fact]
+        public async Task Execute_when_user_declines_prompt_suppresses_post_run_banner()
+        {
+            using var session = UpdateSession.BeginTestScope();
+            var (run, console, _) = BuildHarness(
+                configChecker: c => c.CurrentVersion = "1.0.0",
+                configUpdater: u => u.GetLatestImpl = _ => Task.FromResult<RemoteRelease?>(ReleaseV142));
+            console.Profile.Capabilities.Interactive = true;
+            console.Input.PushTextWithEnter("n");
+
+            await run();
+
+            Assert.Equal(string.Empty, RenderBannerAfterRun());
+        }
+
+        [Fact]
+        public async Task Execute_when_install_fails_suppresses_post_run_banner()
+        {
+            using var session = UpdateSession.BeginTestScope();
+            var (run, _, _) = BuildHarness(
+                configChecker: c => c.CurrentVersion = "1.0.0",
+                configUpdater: u =>
+                {
+                    u.GetLatestImpl = _ => Task.FromResult<RemoteRelease?>(ReleaseV142);
+                    u.InstallReleaseImpl = (_, _, _, _) => throw new UpdateException("boom");
+                });
+
+            await run("--yes");
+
+            Assert.Equal(string.Empty, RenderBannerAfterRun());
+        }
+
+        [Fact]
+        public async Task Execute_when_latest_release_unknown_leaves_post_run_banner()
+        {
+            // The command never showed a latest release, so the banner may
+            // still have something to say.
+            using var session = UpdateSession.BeginTestScope();
+            var (run, _, _) = BuildHarness(
+                configUpdater: u => u.GetLatestImpl = _ => Task.FromResult<RemoteRelease?>(null));
+
+            await run("--yes");
+
+            Assert.Contains("New version", RenderBannerAfterRun(), StringComparison.Ordinal);
+        }
+
+        [Fact]
         public async Task Execute_when_install_throws_UpdateException_returns_three()
         {
             var (run, console, _) = BuildHarness(
@@ -260,6 +320,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
         }
 
         // ---------- helpers ----------
+
+        // What the README's post-run UpdateBanner.RenderIfAvailable would print
+        // after this command, given a background check that found v1.4.2.
+        private static string RenderBannerAfterRun()
+        {
+            var info = new UpdateInfo("1.0.0", "v1.4.2", IsUpdateAvailable: true, ReleaseUrl: null);
+            using var banner = new TestConsole();
+            UpdateBanner.RenderIfAvailable(Task.FromResult<UpdateInfo?>(info), waitFor: TimeSpan.FromSeconds(1), console: banner);
+            return banner.Output;
+        }
 
         private (Runner Run, TestConsole Console, StubSelfUpdater Updater) BuildHarness(
             Action<StubUpdateChecker>? configChecker = null,

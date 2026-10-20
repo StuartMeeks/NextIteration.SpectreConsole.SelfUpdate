@@ -1,5 +1,6 @@
 using System.IO.Compression;
 
+using NextIteration.SpectreConsole.SelfUpdate.Internal;
 using NextIteration.SpectreConsole.SelfUpdate.Pipeline;
 using NextIteration.SpectreConsole.SelfUpdate.Resolution;
 using NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure;
@@ -20,6 +21,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
         [Fact]
         public async Task InstallAsync_swaps_files_into_install_directory()
         {
+            using var session = UpdateSession.BeginTestScope();
             using var work = new TempDir();
             var installDir = Path.Join(work.Path, "install");
             Directory.CreateDirectory(installDir);
@@ -52,11 +54,15 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
 
             // Staging removed
             Assert.False(Directory.Exists(Path.Join(installDir, ".update")));
+
+            // Recorded for the post-run banner: this process is still the old binary.
+            Assert.Equal("v1.4.2", UpdateSession.InstalledTag);
         }
 
         [Fact]
         public async Task InstallAsync_throws_when_no_asset_matches_rid()
         {
+            using var session = UpdateSession.BeginTestScope();
             using var work = new TempDir();
             var installDir = Path.Join(work.Path, "install");
             Directory.CreateDirectory(installDir);
@@ -77,6 +83,7 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Pipeline
                 installer.InstallAsync(release, progress: null, onConflict: null, CancellationToken.None));
 
             Assert.Contains("No release asset matches RID 'linux-arm64'", ex.Message, StringComparison.Ordinal);
+            Assert.Null(UpdateSession.InstalledTag);
         }
 
         [Fact]

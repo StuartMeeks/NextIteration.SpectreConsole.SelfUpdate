@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
+using NextIteration.SpectreConsole.SelfUpdate.Internal;
 using NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure;
 
 using Spectre.Console;
@@ -28,6 +29,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         [Fact]
         public void RenderIfAvailable_when_update_present_renders_banner()
         {
+            // Isolate from tests elsewhere that suppress the banner process-wide.
+            using var session = UpdateSession.BeginTestScope();
             var info = new UpdateInfo("1.0.0", "v1.4.2", IsUpdateAvailable: true, ReleaseUrl: new Uri("https://example.com/r"));
             var task = Task.FromResult<UpdateInfo?>(info);
             using var console = new TestConsole();
@@ -43,6 +46,8 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
         [Fact]
         public void RenderIfAvailable_when_no_release_url_omits_link()
         {
+            // Isolate from tests elsewhere that suppress the banner process-wide.
+            using var session = UpdateSession.BeginTestScope();
             var info = new UpdateInfo("1.0.0", "v1.4.2", IsUpdateAvailable: true, ReleaseUrl: null);
             var task = Task.FromResult<UpdateInfo?>(info);
             using var console = new TestConsole();
@@ -100,6 +105,47 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests
             UpdateBanner.RenderIfAvailable(task, waitFor: TimeSpan.FromSeconds(1), console: console);
 
             Assert.Equal(string.Empty, console.Output);
+        }
+
+        [Fact]
+        public void RenderIfAvailable_after_Suppress_writes_nothing()
+        {
+            using var session = UpdateSession.BeginTestScope();
+            var info = new UpdateInfo("1.0.0", "v1.4.2", IsUpdateAvailable: true, ReleaseUrl: null);
+            using var console = new TestConsole();
+
+            UpdateBanner.Suppress();
+            UpdateBanner.RenderIfAvailable(Task.FromResult<UpdateInfo?>(info), waitFor: TimeSpan.FromSeconds(1), console: console);
+
+            Assert.Equal(string.Empty, console.Output);
+        }
+
+        [Fact]
+        public void RenderIfAvailable_after_installing_the_available_release_writes_nothing()
+        {
+            // The process still reports the old version after the swap; the
+            // recorded install is what tells the banner the update is done.
+            using var session = UpdateSession.BeginTestScope();
+            UpdateSession.RecordInstalled("v1.4.2");
+            var info = new UpdateInfo("1.0.0", "v1.4.2", IsUpdateAvailable: true, ReleaseUrl: null);
+            using var console = new TestConsole();
+
+            UpdateBanner.RenderIfAvailable(Task.FromResult<UpdateInfo?>(info), waitFor: TimeSpan.FromSeconds(1), console: console);
+
+            Assert.Equal(string.Empty, console.Output);
+        }
+
+        [Fact]
+        public void RenderIfAvailable_after_installing_an_older_release_still_renders()
+        {
+            using var session = UpdateSession.BeginTestScope();
+            UpdateSession.RecordInstalled("v1.3.0");
+            var info = new UpdateInfo("1.0.0", "v1.4.2", IsUpdateAvailable: true, ReleaseUrl: null);
+            using var console = new TestConsole();
+
+            UpdateBanner.RenderIfAvailable(Task.FromResult<UpdateInfo?>(info), waitFor: TimeSpan.FromSeconds(1), console: console);
+
+            Assert.Contains("v1.4.2", console.Output, StringComparison.Ordinal);
         }
 
         [Fact]

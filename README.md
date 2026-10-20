@@ -19,7 +19,7 @@ Stop hand-rolling the same "where's the latest release / what's my RID / where d
 - **SHA-256 verification by default.** Reads from per-asset metadata when the source publishes it, or downloads a sibling `SHA256SUMS.txt`. Stack additional verifiers (minisign, cosign, Authenticode) on top via `IPackageVerifier`.
 - **Atomic file swap, no restarter required.** Stages under `.update/`, swaps via `.old/`, cleans up `.old/` on the next launch — the running new binary is sufficient proof the swap succeeded.
 - **Drop-in `update` command.** `CommandConfiguratorExtensions.AddUpdateCommand()` for a single command, `AddUpdateBranch()` for `update check` / `update apply`.
-- **Background check + post-run banner.** `UpdateBanner.KickOffCheck()` and `RenderIfAvailable()` wire up the pl-app-style UX in two lines.
+- **Background check + post-run banner.** `UpdateBanner.KickOffCheck()` and `RenderIfAvailable()` wire up the pl-app-style UX in two lines. The banner stays silent after `update` / `update check` has already shown the latest release; call `UpdateBanner.Suppress()` from your own update command to get the same.
 - **Channels & pre-releases.** `Channel` option flows through every source.
 - **Configurable cache, timeouts, opt-out env var, dev-build skip predicate.**
 - **Zero compiler warnings, full XML documentation on the public surface**, `TreatWarningsAsErrors=true`, `AnalysisLevel=latest`. SourceLink, deterministic builds, embedded symbols, snupkg symbol packages.
@@ -62,7 +62,7 @@ app.Configure(c =>
 });
 var exit = app.Run(args);
 
-UpdateBanner.RenderIfAvailable(checkTask);
+UpdateBanner.RenderIfAvailable(checkTask);   // silent if `update` already handled it
 return exit;
 ```
 
