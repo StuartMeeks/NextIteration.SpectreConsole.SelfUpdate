@@ -11,6 +11,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] — 2026-10-20
+
+Fixes the post-run update banner repeating what `update` / `update check` just said — most
+visibly, offering the version that had just been installed — and adds
+`UpdateBanner.Suppress()` for apps with their own update UX. No breaking changes.
+
+### Fixed
+
+- **The post-run banner no longer repeats what `update` or `update check` just said** ([#42](https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/issues/42)).
+  Before, an app following the README got the banner even after `update` had run. Right
+  after a successful install, it told the operator to install the version they had just
+  installed. The banner compares against the running process's version, and that is
+  still the old binary after the swap. `UpdateBanner.RenderIfAvailable` now renders nothing:
+  - once the built-in `update` or `update check` command has shown the latest release,
+    whether the operator installed it, declined, or the install failed;
+  - when this process has already installed a release at least as new as the one
+    available, so an app that calls `ISelfUpdater.InstallAsync` from its own command is
+    covered too.
+
+  Apps need no changes, and the README's two-line setup keeps working.
+
+### Added
+
+- **`UpdateBanner.Suppress()`**, for apps with their own check or update UX: call it once
+  your command has shown the latest release, and the post-run banner stays silent for
+  the rest of the process. Additive public API.
+
+### Changed
+
+- **`PackageValidationBaselineVersion` moved to `1.1.0`**, the last shipped release.
+
+---
+
 ## [1.1.0] — 2026-10-06
 
 Moves to **Spectre.Console.Cli 0.57.2**. Spectre.Console.Cli now ships on its own release
@@ -304,7 +337,8 @@ Initial commit. Never published to nuget.org — superseded by 0.1.1 before the 
 - Full XML documentation on the public surface, `TreatWarningsAsErrors=true`, `AnalysisLevel=latest`.
 - SourceLink, deterministic builds, published symbol packages.
 
-[Unreleased]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v1.0.1
 [0.3.1]: https://github.com/StuartMeeks/NextIteration.SpectreConsole.SelfUpdate/releases/tag/v0.3.1

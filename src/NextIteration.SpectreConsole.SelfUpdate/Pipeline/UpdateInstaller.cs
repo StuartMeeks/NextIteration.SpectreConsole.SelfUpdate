@@ -1,3 +1,5 @@
+using NextIteration.SpectreConsole.SelfUpdate.Internal;
+
 namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
 {
     /// <summary>
@@ -125,6 +127,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Pipeline
                 progress?.Report(new UpdateProgressEvent(UpdateStage.Swapping, 0));
                 await SwapAsync(sourceDir, installDir, oldDir, _options.PreservePaths, onConflict, ct).ConfigureAwait(false);
                 progress?.Report(new UpdateProgressEvent(UpdateStage.Swapping, 1));
+
+                // This process is still the old binary, so its version no
+                // longer says what is installed. Tell the banner.
+                UpdateSession.RecordInstalled(release.Tag);
             }
             finally
             {

@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Globalization;
 
+using NextIteration.SpectreConsole.SelfUpdate.Internal;
+
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -77,6 +79,10 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Commands
             }
 
             _console.MarkupLineInterpolated(CultureInfo.InvariantCulture, $"Latest release: [bold]{info.LatestTag}[/]");
+
+            // Every path from here has told the operator about the latest
+            // release, so the post-run banner would only repeat it.
+            UpdateSession.MarkHandled();
 
             if (!info.IsUpdateAvailable)
             {

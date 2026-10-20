@@ -11,7 +11,7 @@
 
 	<PropertyGroup>
 		<PackageId>NextIteration.SpectreConsole.SelfUpdate</PackageId>
-		<Version>1.1.0</Version>
+		<Version>1.2.0</Version>
 		<Description>Self-update for Spectre.Console CLIs: pluggable update sources (GitHub Releases over HTTP, GitHub Releases via gh CLI for private repos, generic HTTPS manifest, custom), SHA-256 verification, atomic file swap, and a drop-in `update` command.</Description>
 		<GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
 		<PackageOutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\packages</PackageOutputPath>
@@ -24,14 +24,13 @@
 		<PackageIcon>icon.png</PackageIcon>
 		<!--
 			Validate the public surface against the last shipped release, not just
-			framework compatibility: an accidental API break relative to 1.0.1
+			framework compatibility: an accidental API break relative to 1.1.0
 			fails the build instead of shipping.
 
-			1.0.1 is the first stable release, so from here a break against this
-			baseline is a 2.0.0, not a judgement call. There is no 1.0.0 to
-			baseline against — it was never published (see CHANGELOG).
+			A break against this baseline is a 2.0.0, not a judgement call. The
+			baseline moves with each release, to the version before it.
 		-->
-		<PackageValidationBaselineVersion>1.0.1</PackageValidationBaselineVersion>
+		<PackageValidationBaselineVersion>1.1.0</PackageValidationBaselineVersion>
 	</PropertyGroup>
 
 	<ItemGroup>

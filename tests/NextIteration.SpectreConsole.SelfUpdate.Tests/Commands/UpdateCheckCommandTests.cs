@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 
 using NextIteration.SpectreConsole.SelfUpdate.Commands;
+using NextIteration.SpectreConsole.SelfUpdate.Internal;
 using NextIteration.SpectreConsole.SelfUpdate.Tests.Infrastructure;
 
 using Spectre.Console;
@@ -96,6 +97,22 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
         }
 
         [Fact]
+        public async Task Execute_when_update_available_suppresses_post_run_banner()
+        {
+            using var session = UpdateSession.BeginTestScope();
+            var (run, _, _) = BuildHarness(checker =>
+            {
+                checker.CurrentVersion = "1.0.0";
+                checker.CheckImpl = _ => Task.FromResult<UpdateInfo?>(
+                    new UpdateInfo("1.0.0", "v1.4.2", IsUpdateAvailable: true, ReleaseUrl: null));
+            });
+
+            await run();
+
+            Assert.Equal(string.Empty, RenderBannerAfterRun());
+        }
+
+        [Fact]
         public async Task Execute_when_check_returns_null_returns_one()
         {
             var (run, console, _) = BuildHarness(checker =>
@@ -137,6 +154,16 @@ namespace NextIteration.SpectreConsole.SelfUpdate.Tests.Commands
         }
 
         // ---------- helpers ----------
+
+        // What the README's post-run UpdateBanner.RenderIfAvailable would print
+        // after this command, given a background check that found v1.4.2.
+        private static string RenderBannerAfterRun()
+        {
+            var info = new UpdateInfo("1.0.0", "v1.4.2", IsUpdateAvailable: true, ReleaseUrl: null);
+            using var banner = new TestConsole();
+            UpdateBanner.RenderIfAvailable(Task.FromResult<UpdateInfo?>(info), waitFor: TimeSpan.FromSeconds(1), console: banner);
+            return banner.Output;
+        }
 
         private (Runner Run, TestConsole Console, StubUpdateChecker Checker) BuildHarness(Action<StubUpdateChecker> configChecker)
         {
